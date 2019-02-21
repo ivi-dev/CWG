@@ -1,4 +1,4 @@
-# CWG
+# What is it
 Casual Word Game (CWG) is a text based game where you try to guess a word based on it's definition. It is easy to pick up, has an educational element to it and boosts your general knowledge and vocabulary, plus it's just fun to play.
 
 # Getting Started
