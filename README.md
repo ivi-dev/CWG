@@ -3,11 +3,11 @@ Casual Word Game (CWG) is a text based game where you try to guess a word based 
 
 # Getting Started
 
-All of the code and resources that you'd need are here. To work on it just clone the repo and open it up in you favourite IDE/editor. See _**Deployment**_ for notes on how to build and deploy the project.
+All of the code and resources that you'd need are here. To work on it just clone the repo and open it up in you favourite IDE/editor.
 
 # Prerequisites
 
-To edit or add source code all you need is a code editor/IDE with support for the Python programming language. Then just clone the repo...
+To edit or add source code all you need is a code editor/IDE and an operating system with support for the Python programming language (_v3.7_). Then just clone the repo...
 
 ```git
 git clone https://github.com/ivi-dev/CWG.git
@@ -17,8 +17,6 @@ git clone https://github.com/ivi-dev/CWG.git
 The CWG program was written for the _**3.7**_ version of Python. For runnig the game you need to have at least _**Python 3.7**_ installed on your system. The game happens in the your terminal/command prompt.
 To launch CWG just double click it's executable (.pyi).
 
-# Running the tests
-
 # Deployment
 
 To come...
@@ -26,6 +24,10 @@ To come...
 # Built With
 
 To come...
+
+# Contribution
+
+Everybody who's interested in the code and the concept is welcome to contribute to it.
 
 # Authors
 
