@@ -39,5 +39,5 @@ https://github.com/ivi-dev/CWG/blob/master/CODE_OF_CONDUCT.md
 
 # License
 
-This project is licensed under the MIT License.  
+This project is licensed under the **MIT License**.  
 https://github.com/ivi-dev/CWG/blob/master/LICENSE
