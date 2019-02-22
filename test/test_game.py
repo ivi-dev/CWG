@@ -4,7 +4,6 @@ from src.game import Game
 from unittest.mock import Mock
 
 
-
 class TestGame(unittest.TestCase):
     """Test the game's mechanisms"""
 
@@ -14,7 +13,7 @@ class TestGame(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         try:
-            cls.game = Game('../../resources/words.json')
+            cls.game = Game('../../src/data/words.json')
             cls.mock_game = Mock(Game)
         except TypeError:
             TestGame.tearDownClass()
