@@ -29,6 +29,10 @@ To come...
 
 Everybody who's interested in the code and the concept is welcome to contribute to it.
 
+# Code of Conduct
+
+https://github.com/ivi-dev/CWG/blob/master/CODE_OF_CONDUCT.md
+
 # Authors
 
 Iliyan Videv
