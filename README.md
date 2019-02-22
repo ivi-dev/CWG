@@ -35,7 +35,7 @@ https://github.com/ivi-dev/CWG/blob/master/CODE_OF_CONDUCT.md
 
 # Authors
 
-Iliyan Videv
+[Iliyan Videv](mailto:videviliyan@gmail.com)
 
 # License
 
