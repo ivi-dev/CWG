@@ -27,7 +27,7 @@ To come...
 
 # Contribution
 
-Everybody who's interested in the code and the concept is welcome to contribute to it.
+https://github.com/ivi-dev/CWG/blob/master/CONTRIBUTING.md
 
 # Code of Conduct
 
