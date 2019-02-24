@@ -3,7 +3,7 @@ import json
 import re
 import sys
 from random import choice as choose
-from src.settings import Settings
+from settings import Settings
 
 
 class Game:
@@ -123,7 +123,8 @@ class Game:
             positions += f"{str(' ' + str(position)).center(4)}"
         # If a prompt is supplied (usually at the beginning of the game) then display it
         if prompt:
-            print(f"\n{55 * '='}\n\nOk, here we go. The rules are very simple."
+            print(f"\n{55 * '='}\n\n{Settings.programName.upper()}\nv{Settings.programVersion}\n\nReady to have " +
+                  "some fun? Ok, here we go.\nThe rules are very simple."
                   f"\nTry to guess what the word by making a 'position-letter' " +
                   "guess that consists of a position"
                   "\n(the row of numbers below the word" +
@@ -167,7 +168,11 @@ class Game:
     def syn(self) -> None:
         """Print a word's synonym[s]"""
 
-        print(f"\n{str(self.word['synonyms'].capitalize()).replace('[', '').replace(']', '')}\n")
+        synonyms = ''
+        for syn in self.word['synonyms']:
+            synonyms += f"{str(syn).capitalize()}, "
+        synonyms = synonyms.strip(', ')
+        print(f"\n{synonyms}\n")
         self.collect_guess()
 
     def collect_guess(self, test_mode: bool = False) -> None:
@@ -248,7 +253,7 @@ class Game:
         else:
             self.word['attempts'] -= 1
             if self.word['attempts'] == 0:
-                print("\nSORRY, NO MORE attempts REMAINING :(\n")
+                print("\nGAME OVER. NO MORE ATTEMPTS REMAINING :(\n")
                 self.wordIsActive = True
             else:
                 print('\nSORRY WRONG GUESS. TRY AGAIN.\n' + f"{self.word['attempts']} try/ies remaining.\n")
@@ -264,7 +269,7 @@ class Game:
             int(letter_position_guess_type.groups()[0]) - 1, letter_position_guess_type.groups()[1].upper()
         # If the letter is already revealed...
         if self.wordStructure[guess_position] != '_':
-            print('\nThis letter is already revealed. Try the other ones.\n')
+            print('\nThis letter is already revealed. Try the another one.\n')
             self.print_word()
         # ...if the guess is correct (the guessed 'letter' is indeed at the specified 'position' in the word)
         # and has not been revealed before
@@ -284,10 +289,10 @@ class Game:
         else:
             self.word['attempts'] -= 1
             if self.word['attempts'] == 0:
-                print("\nSorry, more attempts remaining :(\n")
+                print("\nGAME OVER. SORRY, NO MORE ATTEMPTS REMAINING :(\n")
                 self.wordIsActive = True
             else:
-                print('\nSORRY WRONG GUESS. TRY AGAIN.\n' + f"{self.word['attempts']} try/ies remaining.\n")
+                print('\nSORRY WRONG GUESS. TRY AGAIN.\n' + f"{self.word['attempts']} attempt[s] remaining.\n")
                 self.print_word()
 
     def game_flow(self) -> None:
