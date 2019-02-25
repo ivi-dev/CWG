@@ -3,27 +3,33 @@ Casual Word Game (CWG) is a text based game where you try to guess a word based 
 
 # Getting Started
 
-All of the code and resources that you'd need are here. To work on it just clone the repo and open it up in you favourite IDE/editor.
+If you are interested in the project just fork the repo and develop further. Would love to see your proposed changes and enhancements.  
+Running the game is a simple matter of unpacking one of the archives in the `distributions` folder and double clicking the CWG file. The game runs in the terminal and the player controls it through text commands.
 
 # Prerequisites
 
-To edit or add source code all you need is a code editor/IDE and an operating system with support for the Python programming language (_v3.7_). Then just clone the repo...
+To edit or add source code all you need is a code editor/IDE and an operating system with _Python v3.7_ installed.
 
-```git
-git clone https://github.com/ivi-dev/CWG.git
+# Build and deployment
+
+A typical build of the CWG's source is done via the _PyInstaller_ tool. You can install it by:
 ```
-...and open with your favourite code editor. 
+pip install pyinstaller
+```
+or upgrade it:
+```
+pip install --upgrade pyinstaller
+```
 
-The CWG program was written for the _**3.7**_ version of Python. For runnig the game you need to have at least _**Python 3.7**_ installed on your system. The game happens in the your terminal/command prompt.
-To launch CWG just double click it's executable (.pyi).
-
-# Deployment
-
-To come...
-
-# Built With
-
-To come...
+Then it's a matter of choosing the preferred options...  
+* `-n` - the name of the package
+* `-D` or `-F` - the type of distibution: `single directory` or `single file` respectively.
+* `--add-data` - adds the required extra non-binary files
+* `-p` - the path to search for dependencies
+...and running the command
+```
+pyinstaller -n <name_of_the_build> -<build_type>D|F --add-data <path_to_data>:<destination_of_data> -p <dir_name> <module_name>.py    
+```
 
 # Contribution
 
