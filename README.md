@@ -9,7 +9,6 @@ If you are interested in the project just fork the repo and develop further. Wou
 # Prerequisites
 
 To edit/add source code or to debug it all you need is a code editor/IDE and an operating system with _Python v3.7_ installed.  
-To play the game just download an archive of your choosing from the `distributions` folder, extract it and double-click the CWG file. The game runs in the terminal and the player controls it through text commands.
 
 # Build and deployment
 
