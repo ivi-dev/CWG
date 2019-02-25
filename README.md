@@ -46,6 +46,9 @@ https://github.com/ivi-dev/CWG/blob/master/CODE_OF_CONDUCT.md
 
 [Iliyan Videv](mailto:videviliyan@gmail.com)
 
+# Current version
+1.0
+
 # License
 
 This project is licensed under the **MIT License**.  
