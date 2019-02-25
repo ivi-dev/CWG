@@ -2,12 +2,12 @@
 
 from distutils.core import setup
 
-setup(name='CWG',
+setup(name='Casual_Word_Game',
       version='1.0',
       description='A casual word guessing game.',
       author='Iliyan Videv',
       author_email='videviliyan@gmail.com',
       url='https://github.com/ivi-dev/CWG/',
       packages=['src'],
-      package_data={'': ['data/*.*']},
+      package_data={'': ['data/words.json']},
       )
