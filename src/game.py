@@ -29,6 +29,9 @@ class Game:
         """
 
         # If the word file could not be accessed...
+        _words_file = None
+        words_obj: dict
+        _dict = {}
         try:
             _words_file = open(words_file)
         # ...end the game
@@ -36,8 +39,11 @@ class Game:
             sys.exit("\n\nCouldn't load the game's word file. Check that it exists at the location specified " +
                      f"('{words_file}')"
                      "\nExiting program.\n")
+        finally:
+            if _words_file is not None:
+                words_obj = json.loads(_words_file.read())
+                _words_file.close()
         # ...Else...
-        words_obj, _dict = json.loads(_words_file.read()), {}
         # ...construct a mini dictionary for each non-digit word that doesn't contain white space, dashes and has a
         # definition and synonym[s]
         for word in words_obj.keys():
@@ -51,10 +57,9 @@ class Game:
                     'partOfSpeech': str(words_obj[_word]['definitions'][0]['partOfSpeech']).capitalize(),
                     'def': str(words_obj[_word]['definitions'][0]['definition']).capitalize(),
                     'synonyms': list(words_obj[_word]['definitions'][0]['synonyms']).copy(),
-                    'attempts': len(_word) // 2,
-                    'showLetters': len(_word) // 2
+                    'attempts': round(len(_word) * Settings.revealLettersRatio) + 1,
+                    'showLetters': round(len(_word) * Settings.revealLettersRatio)
                 }
-        _words_file.close()
         return _dict
 
     def choose_word(self) -> dict:
@@ -138,6 +143,7 @@ class Game:
                   "\n\nTo can get a 'part-of-speech' hint type in '>speech' to see it." +
                   "\nIf you need a definition hint, type in '>define'." +
                   "\nTo show synonyms of the word type in '>syn'."
+                  "\nTo let a random letter type in '>let'. Careful, this will also use up an attempt!"
                   "\nTo skip this word and try anther one, type '>skip'."
                   "\nTo quit the game at any time type '>exit'." +
                   f"\nThat's it, have fun!"
@@ -175,6 +181,28 @@ class Game:
             synonyms += f"{str(syn).capitalize()}, "
         synonyms = synonyms.strip(', ')
         print(f"\n{synonyms}\n")
+        self.collect_guess()
+
+    def let(self):
+        """Reveal a random letter from the word"""
+
+        hidden_letters = []
+        position = 0
+        for letter in self.wordStructure:
+            if letter == '_':
+                hidden_letters.append(position)
+            position += 1
+        else:
+            random_position = choose(hidden_letters)
+            self.update_word_structure(letter=self.word['word'][random_position], position=random_position)
+            self.word['attempts'] -= 1
+            self.print_word()
+            self.collect_guess()
+
+    def att(self):
+        """Show the number of attempts remaining"""
+
+        print(f"\nREMAINING ATTEMPTS: {self.word['attempts']}\n")
         self.collect_guess()
 
     def collect_guess(self, test_mode: bool = False) -> None:
@@ -219,6 +247,17 @@ class Game:
         # If a word synonyms are requested - display them
         elif guess == '>SYN':
             self.syn()
+
+        # If a request for letter revealing is made - do it
+        elif guess == '>LET':
+            if self.word['attempts'] == 1:
+                print('\nYou have just 1 attempt remaining. Cannot reveal a letter.\n')
+            else:
+                self.let()
+
+        # If the number of remaining attempts is requested - show them
+        elif guess == '>ATT':
+            self.att()
 
         # If another word is requested - restart the game
         elif guess == '>SKIP':
