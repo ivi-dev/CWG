@@ -3,7 +3,6 @@ import os
 
 class Settings:
 
-    defaultWordsFile = os.path.abspath('src/data/words.json')
     programName = 'Casual Word Game'
     programVersion = '1.0'
 

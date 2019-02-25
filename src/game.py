@@ -4,6 +4,7 @@ import re
 import sys
 from random import choice as choose
 from settings import Settings
+from os.path import split, join
 
 
 class Game:
@@ -11,7 +12,8 @@ class Game:
     def __init__(self, words_file: object = None):
         """The game class initializer"""
 
-        self.words_file_path = Settings.defaultWordsFile if words_file is None else str(words_file)
+        self.words_file_path = join(split(sys.argv[0])[0], 'data', 'words.json') if words_file is None \
+            else str(words_file)
         self.wordDict = self.load_words(self.words_file_path)
         self.word = {}
         self.wordStructure = []
