@@ -9,7 +9,6 @@ If you are interested in the project just fork the repo and develop further. Wou
 # Prerequisites
 
 To edit/add source code or to debug it all you need is a code editor/IDE and an operating system with _Python v3.7_ installed.  
-To play the game just download an archive of your choosing from the `distributions` folder, extract it and double-click the CWG file. The game runs in the terminal and the player controls it through text commands.
 
 # Build and deployment
 
@@ -32,15 +31,15 @@ Then it's a matter of choosing the preferred options...
 pyinstaller -n <name_of_the_build> -<build_type>D|F --add-data <path_to_data>:<destination_of_data> -p <dir_name> <module_name>.py    
 ```
 
-A more detailed overview and instrcutions are available at: https://pyinstaller.readthedocs.io/en/stable/usage.html#mac-os-x-specific-options
+A more detailed overview and instrcutions are available at: [PyInstaller Manual](https://pyinstaller.readthedocs.io/en/stable/usage.html#mac-os-x-specific-options)
 
 # Contribution
 
-https://github.com/ivi-dev/CWG/blob/master/CONTRIBUTING.md
+[Contributing guidelines](https://github.com/ivi-dev/CWG/blob/master/CONTRIBUTING.md)
 
 # Code of Conduct
 
-https://github.com/ivi-dev/CWG/blob/master/CODE_OF_CONDUCT.md
+[Code of Conduct](https://github.com/ivi-dev/CWG/blob/master/CODE_OF_CONDUCT.md)
 
 # Authors
 
@@ -49,4 +48,4 @@ https://github.com/ivi-dev/CWG/blob/master/CODE_OF_CONDUCT.md
 # License
 
 This project is licensed under the **MIT License**.  
-https://github.com/ivi-dev/CWG/blob/master/LICENSE
+[LICENSE](https://github.com/ivi-dev/CWG/blob/master/LICENSE)
