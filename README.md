@@ -31,7 +31,7 @@ Then it's a matter of choosing the preferred options...
 pyinstaller -n <name_of_the_build> -<build_type>D|F --add-data <path_to_data>:<destination_of_data> -p <dir_name> <module_name>.py    
 ```
 
-A more detailed overview and instrcutions are available at: (PyInstaller Manual)[https://pyinstaller.readthedocs.io/en/stable/usage.html#mac-os-x-specific-options]
+A more detailed overview and instrcutions are available at: [PyInstaller Manual](https://pyinstaller.readthedocs.io/en/stable/usage.html#mac-os-x-specific-options)
 
 # Contribution
 
