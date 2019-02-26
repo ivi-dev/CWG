@@ -1,4 +1,4 @@
-# Here's what's new
+# Changelog
 
 * Increased the number of word guessing attempts by one
 * Added the capability to reveal a random letter from a word which costs an attempt
