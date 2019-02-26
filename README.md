@@ -48,4 +48,4 @@ A more detailed overview and instrcutions are available at: [PyInstaller Manual]
 # License
 
 This project is licensed under the **MIT License**.  
-https://github.com/ivi-dev/CWG/blob/master/LICENSE
+[LICENSE](https://github.com/ivi-dev/CWG/blob/master/LICENSE)
