@@ -1,5 +1,7 @@
-<a href="https://github.com/ivi-dev/CWG/blob/master/distribution/CWG-1.0.tgz" download>CWG-1.1.tgz</a>  
-<a href="https://github.com/ivi-dev/CWG/blob/master/distribution/CWG-1.0.zip" download>CWG-1.1.zip</a>
+**Latest releases**
+
+* <a href="https://github.com/ivi-dev/CWG/blob/master/distribution/CWG-1.0.tgz" download>CWG-1.1.tgz</a>  
+* <a href="https://github.com/ivi-dev/CWG/blob/master/distribution/CWG-1.0.zip" download>CWG-1.1.zip</a>
 
 # What is it
 Casual Word Game (CWG) is a text based game where you try to guess a word based on it's definition. It is meant to be easy to pick up, has an educational element to it and boosts your general knowledge and vocabulary, plus it's just fun to play.  
