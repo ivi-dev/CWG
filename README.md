@@ -35,11 +35,11 @@ A more detailed overview and instrcutions are available at: [PyInstaller Manual]
 
 # Contribution
 
-https://github.com/ivi-dev/CWG/blob/master/CONTRIBUTING.md
+[Contributing guidelines](https://github.com/ivi-dev/CWG/blob/master/CONTRIBUTING.md)
 
 # Code of Conduct
 
-https://github.com/ivi-dev/CWG/blob/master/CODE_OF_CONDUCT.md
+[Code of Conduct](https://github.com/ivi-dev/CWG/blob/master/CODE_OF_CONDUCT.md)
 
 # Authors
 
