@@ -1,4 +1,4 @@
-<a href="https://github.com/ivi-dev/CWG/blob/master/distribution/CWG-1.0.tgz" download>CWG-1.1.tgz</a>
+<a href="https://github.com/ivi-dev/CWG/blob/master/distribution/CWG-1.0.tgz" download>CWG-1.1.tgz</a>  
 <a href="https://github.com/ivi-dev/CWG/blob/master/distribution/CWG-1.0.zip" download>CWG-1.1.zip</a>
 
 # What is it
