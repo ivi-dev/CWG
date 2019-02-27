@@ -56,9 +56,7 @@ class Game:
                     'word': _word.upper(),
                     'partOfSpeech': str(words_obj[_word]['definitions'][0]['partOfSpeech']).capitalize(),
                     'def': str(words_obj[_word]['definitions'][0]['definition']).capitalize(),
-                    'synonyms': list(words_obj[_word]['definitions'][0]['synonyms']).copy(),
-                    'attempts': round(len(_word) * Settings.revealLettersRatio) + 1,
-                    'showLetters': round(len(_word) * Settings.revealLettersRatio)
+                    'synonyms': list(words_obj[_word]['definitions'][0]['synonyms']).copy()
                 }
         return _dict
 
@@ -69,6 +67,10 @@ class Game:
         """
 
         chosen_word, self.wordIsActive = self.wordDict[choose(list(self.wordDict.keys()))], False
+        chosen_word['showLetters'] = round(len(chosen_word['word']) * Settings.revealLettersRatio[Settings.difficulty])
+
+        chosen_word['attempts'] = (round(len(chosen_word['word']) * Settings.revealLettersRatio[Settings.difficulty])) \
+            + Settings.attempts[Settings.difficulty]
         return chosen_word
 
     def update_word_structure(self, letter: str = '', position: int = 0, silent: bool = True, prompt: bool = False,
@@ -165,23 +167,40 @@ class Game:
     def let(self) -> None:
         """Reveal a random letter from the word"""
 
-        hidden_letters = []
-        position = 0
-        for letter in self.wordStructure:
-            if letter == '_':
-                hidden_letters.append(position)
-            position += 1
-        else:
-            random_position = choose(hidden_letters)
-            self.update_word_structure(letter=self.word['word'][random_position], position=random_position)
-            self.word['attempts'] -= 1
-            self.print_word()
+        # If there's only one hidden letter in the word
+        if self.wordStructure.count('_') == 1:
+            print("\nThere's only one letter left. Cannot reveal it.")
             self.collect_guess()
+        else:
+            hidden_letters = []
+            position = 0
+            for letter in self.wordStructure:
+                if letter == '_':
+                    hidden_letters.append(position)
+                position += 1
+            else:
+                random_position = choose(hidden_letters)
+                self.update_word_structure(letter=self.word['word'][random_position], position=random_position)
+                self.word['attempts'] -= 1
+                self.print_word()
+                self.collect_guess()
 
     def att(self) -> None:
         """Show the number of attempts remaining"""
 
         print(f"\nREMAINING ATTEMPTS: {self.word['attempts']}\n")
+        self.collect_guess()
+
+    def diff(self, new_value: str = '') -> None:
+        """Show/change game difficulty"""
+
+        _new_value = str(new_value).lower()
+        if new_value == '':
+            print(f"\nCURRENT GAME DIFFICULTY: {Settings.difficulty.upper()}\n")
+        elif _new_value != '' and _new_value in ['easy', 'medium', 'hard']:
+            Settings.difficulty = _new_value
+        else:
+            raise AttributeError(f"'{new_value}' is not a valid difficulty setting, use 'easy', 'medium', or 'hard'")
         self.collect_guess()
 
     def collect_guess(self, test_mode: bool = False) -> None:
@@ -216,36 +235,45 @@ class Game:
 
         # Before the guess processing check for some control flow keywords
         # If an attempt to exit the game is made - exit the game
-        if guess == '>EXIT':
-            self.stop()
+        if guess == Settings.keywords['exit'].upper():
+            Game.stop()
 
         # If a word speech hint is requested - display it
-        elif guess == '>SPEECH':
+        elif guess == Settings.keywords['speech'].upper():
             self.speech()
 
         # If a word definition is requested - display one
-        elif guess == '>DEFINE':
+        elif guess == Settings.keywords['def'].upper():
             self.define()
 
         # If a word synonyms are requested - display them
-        elif guess == '>SYN':
+        elif guess == Settings.keywords['syn'].upper():
             self.syn()
 
         # If a request for letter revealing is made - do it
-        elif guess == '>LET':
-            if self.word['attempts'] == 1:
-                print('\nYou have just 1 attempt remaining. Cannot reveal a letter.\n')
-            else:
-                self.let()
+        elif guess == Settings.keywords['let'].upper():
+            self.let()
 
         # If the number of remaining attempts is requested - show them
-        elif guess == '>ATT':
+        elif guess == Settings.keywords['att'].upper():
             self.att()
 
         # If another word is requested - restart the game
-        elif guess == '>SKIP':
+        elif guess == Settings.keywords['skip'].upper():
             self.shortPrompt = True
             self.start()
+
+        # If a difficulty review/change is requested
+        elif re.match(rf"^{Settings.keywords['diff'].upper()}", guess):
+            # If trying to set the difficulty...
+            diff_get_match = re.match(rf"{Settings.keywords['diff'].upper()}\s*$", guess)
+            diff_set_match = re.match(rf"{Settings.keywords['diff'].upper()}\s+|EASY|MEDIUM|HARD|$", guess)
+            # Assume a setting change situation
+            if diff_set_match is not None and diff_get_match is None:
+                self.diff(diff_set_match.string.split()[1])
+            # Assume a setting review situation
+            else:
+                self.diff()
 
         # A Regular expression describing the 'position - letter' speech
         letter_position_guess_type = re.fullmatch(r'^(\d+)\s*(\w+)$', guess)
@@ -280,7 +308,7 @@ class Game:
                 print("\nGAME OVER. NO MORE ATTEMPTS REMAINING :(\n")
                 self.wordIsActive = True
             else:
-                print('\nSORRY WRONG GUESS. TRY AGAIN.\n' + f"{self.word['attempts']} try/ies remaining.\n")
+                print('\nSORRY WRONG GUESS. TRY AGAIN.\n' + f"{self.word['attempts']} attempts remaining.\n")
                 self.print_word()
 
     def process_letter_guess(self, letter_position_guess_type: re.Match) -> None:
@@ -345,7 +373,7 @@ class Game:
             self.start()
         # ...else exit the game
         elif choice == '>EXIT':
-            self.stop()
+            Game.stop()
         # ...else if no game flow key word is recognized, re-prompt
         else:
             self.exit_prompt()
@@ -370,7 +398,8 @@ class Game:
             except KeyboardInterrupt:
                 pass
 
-    def stop(self) -> None:
+    @staticmethod
+    def stop() -> None:
         """Stop the game"""
 
         sys.exit()
