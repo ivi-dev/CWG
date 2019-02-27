@@ -18,9 +18,9 @@ class TestSettings(unittest.TestCase):
 
     def test_changing_a_setting(self):
         before = Settings.revealLettersRatio
-        set_to = 1.0
+        set_to = 'a'
         self.assertNotEqual(before, set_to)
-        after = Settings.change('revealLettersRatio', set_to)
+        after = Settings.change('difficulty', set_to)
         self.assertNotEqual(before, after)
 
     def test_changing_a_setting_throws_an_exception(self):
