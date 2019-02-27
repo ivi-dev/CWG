@@ -7,12 +7,21 @@ class Settings:
 
     programVersion = '1.2.0'
 
-    # Indicates how many letters to reveal from a word (0.5 means half of the letters, 0.3 one third of the letters
-    # etc.)
-    revealLettersRatio = 0.5
+    # Controls the game's difficulty. Could be either 'easy', 'medium' (the default) or 'hard'
+    difficulty = 'medium'
 
-    # Indicates the number of attempts to guess the word
-    attempts = revealLettersRatio + 1
+    # Indicates how many letters to reveal from a word (0.5 means half of the letters, 0.3 one third of the letters
+    # etc.). Varies with the 'difficulty'
+    revealLettersRatio = {'easy': 0.5,
+                          'medium': 0.5,
+                          'hard': 0.3}
+
+    # Indicates the number of attempts to guess the word. The numbers mean 'add that many to the value of
+    # revealLettersRatio'. Example: On the 'easy' setting if there are 3 letters revealed, one would have 5 (3 + 2)
+    # attempts to guess the word. Varies with the 'difficulty'
+    attempts = {'easy': 2,
+                'medium': 1,
+                'hard': 0}
 
     # Game flow character. It tells the program that a word following this character calls for an action other than a
     # guess e.g: typing <controlCharacter>EXIT is not trying to guess the word 'EXIT' but trying to quit/exit the game
@@ -25,27 +34,32 @@ class Settings:
                 'syn': f"{controlCharacter}syn",
                 'let': f"{controlCharacter}let",
                 'att': f"{controlCharacter}att",
-                'skip': f"{controlCharacter}skip"
+                'skip': f"{controlCharacter}skip",
+                'diff': f"{controlCharacter}diff"
                 }
 
     @classmethod
-    def initial_prompt(cls, **kwargs):
-        print(f"\n{55 * '='}\n\n{cls.programName.upper()}\nv{cls.programVersion}\n\nReady to have " +
+    def initial_prompt(cls, **kwargs) -> None:
+        """This is the long explanatory text, usually shown at the beginning of the game"""
+
+        print(f"\n{55 * '='}\n\n{cls.programName.upper()}\nv{cls.programVersion}\n\nReady to have "
               "some fun? Ok, here we go.\nThe rules are very simple."
-              f"\nTry to guess what the word by making a 'position-letter' " +
+              f"\nTry to guess what the word by making a 'position-letter' "
               "guess that consists of a position"
-              "\n(the row of numbers below the word" +
+              "\n(the row of numbers below the word"
               " marks the positions) and a letter that you think is at that position."
-              "\n\nFor example: If you think that the letter 'i' is at position '4' in the word " +
+              "\n\nFor example: If you think that the letter 'i' is at position '4' in the word "
               "type '4i' and hit 'ENTER'."
-              "\nOr if you think you know the entire word just type it in and hit 'ENTER'." +
-              f"\nRemember that you have a limited number of attempts." +
-              "\n\nTo can get a 'part-of-speech' hint type in '>speech' to see it." +
-              "\nIf you need a definition hint, type in '>define'." +
+              "\nOr if you think you know the entire word just type it in and hit 'ENTER'."
+              f"\nRemember that you have a limited number of attempts."
+              "\n\nTo can get a 'part-of-speech' hint type in '>speech' to see it."
+              "\nIf you need a definition hint, type in '>define'."
               "\nTo show synonyms of the word type in '>syn'."
               "\nTo let a random letter type in '>let'. Careful, this will also use up an attempt!"
               "\nTo skip this word and try anther one, type '>skip'."
-              "\nTo quit the game at any time type '>exit'." +
+              "\nTo change the difficulty of the game, type '>diff easy|medium|hard'"
+              " or just '>diff' without arguments to see the current setting."
+              "\nTo quit the game at any time type '>exit'."
               f"\nThat's it, have fun!"
               f"\n\nHere's the word spec:")
         for kw in kwargs:
@@ -53,7 +67,9 @@ class Settings:
         print("Can you guess what it is?\n")
 
     @classmethod
-    def short_prompt(cls, **kwargs):
+    def short_prompt(cls, **kwargs) -> None:
+        """This is the short text, usually shown when switching words"""
+
         print(f"\n\nHere's the new word:")
         for kw in kwargs:
             print(f"{str(kw).upper()}: {str(kwargs[kw])}")
