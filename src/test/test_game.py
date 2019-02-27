@@ -5,7 +5,6 @@ from unittest.mock import Mock
 
 
 class TestGame(unittest.TestCase):
-    """Test the game's mechanisms"""
 
     game: Game
     mock_game: Mock
@@ -24,7 +23,6 @@ class TestGame(unittest.TestCase):
         del cls.game
 
     def test_game_initialized(self):
-        self.assertIsNotNone(self.game, 'A test game instance is not created at the beginning of a test.')
         self.assertIsInstance(self.game, Game, 'A test game is not and instance of the "Game" class.')
         self.assertIsInstance(self.game.wordDict, dict, 'The word dictionary of the game is not of type "dict".')
         self.assertIsNot(len(self.game.wordDict.keys()), 0, 'The word dictionary is empty at the beginning of ' +

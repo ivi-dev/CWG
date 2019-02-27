@@ -130,34 +130,13 @@ class Game:
             positions += f"{str(' ' + str(position)).center(4)}"
         # If a prompt is supplied (usually at the beginning of the game) then display it
         if prompt:
-            print(f"\n{55 * '='}\n\n{Settings.programName.upper()}\nv{Settings.programVersion}\n\nReady to have " +
-                  "some fun? Ok, here we go.\nThe rules are very simple."
-                  f"\nTry to guess what the word by making a 'position-letter' " +
-                  "guess that consists of a position"
-                  "\n(the row of numbers below the word" +
-                  " marks the positions) and a letter that you think is at that position."
-                  "\n\nFor example: If you think that the letter 'i' is at position '4' in the word " +
-                  "type '4i' and hit 'ENTER'."
-                  "\nOr if you think you know the entire word just type it in and hit 'ENTER'." +
-                  f"\nRemember that you have a limited number of attempts." +
-                  "\n\nTo can get a 'part-of-speech' hint type in '>speech' to see it." +
-                  "\nIf you need a definition hint, type in '>define'." +
-                  "\nTo show synonyms of the word type in '>syn'."
-                  "\nTo let a random letter type in '>let'. Careful, this will also use up an attempt!"
-                  "\nTo skip this word and try anther one, type '>skip'."
-                  "\nTo quit the game at any time type '>exit'." +
-                  f"\nThat's it, have fun!"
-                  f"\n\nHere's the word spec:"
-                  f"\nLETTERS: {len(self.word['word'])}" +
-                  f"\nDEFINITION: '{self.word['def']}'" +
-                  f"\nATTEMPTS: {self.word['attempts']}" +
-                  "\nCan you guess what it is?\n")
-        # If a 'short prompt' is supplied (usually when continuing the game after a successful guess or skipping a word)
+            Settings.initial_prompt(letters=len(self.word['word']),
+                                    definition=self.word['def'],
+                                    attempts=self.word['attempts'])
         elif short_prompt:
-            print(f"\n\nHere's the new word:"
-                  f"\nLETTERS: {len(self.word['word'])}" +
-                  f"\nDEFINITION: '{self.word['def']}'" +
-                  f"\nATTEMPTS: {self.word['attempts']}\n")
+            Settings.short_prompt(letters=len(self.word['word']),
+                                  definition=self.word['def'],
+                                  attempts=self.word['attempts'])
         print('\n', masked_word, '\n')
         print(positions, '\n')
 
@@ -183,7 +162,7 @@ class Game:
         print(f"\n{synonyms}\n")
         self.collect_guess()
 
-    def let(self):
+    def let(self) -> None:
         """Reveal a random letter from the word"""
 
         hidden_letters = []
@@ -199,7 +178,7 @@ class Game:
             self.print_word()
             self.collect_guess()
 
-    def att(self):
+    def att(self) -> None:
         """Show the number of attempts remaining"""
 
         print(f"\nREMAINING ATTEMPTS: {self.word['attempts']}\n")
@@ -211,13 +190,17 @@ class Game:
         :param test_mode: Tells the method to run in 'test mode'. Test mode is used only for testing purposes
         """
 
+        # If running in test mode...
         if test_mode:
+            # ...exit the method here
             return
 
-        # This holds the guess
+        # This contains the guess
         guess = input().upper()
 
+        # If the guess is empty...
         if len(guess.strip()) == 0:
+            # ...re-run the routine
             self.collect_guess()
 
         # First determine the guess type:
