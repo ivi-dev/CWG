@@ -5,7 +5,7 @@ class Settings:
 
     programName = 'Casual Word Game'
 
-    programVersion = '1.2.0'
+    programVersion = '1.2.1'
 
     # Controls the game's difficulty. Could be either 'easy', 'medium' (the default) or 'hard'
     difficulty = 'medium'
