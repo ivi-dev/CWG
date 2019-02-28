@@ -3,7 +3,7 @@ Casual Word Game (CWG) is a text based game where you try to guess a word based 
 The other main purpose of the CWG project is to serve as an entry point into the world of the Python programming language. Fresh and creative ideas for good, clean code and tidy file ordering are always welcome and encouraged.
 
 # Download and installation
-You can download a copy of the game to play from [here](https://github.com/ivi-dev/CWG/releases).  
+You can download a copy of the game to play from [here](https://github.com/ivi-dev/CWG/releases). Be aware that some of the releases are for a particular operating system. If that doesn't work for you, please request a specific build from the maintainers if you cannot build the source yourself that is.
 To install just extract the archive into a convenient location on your machine and double click on the _CWG_ file.
 
 # Getting Started
