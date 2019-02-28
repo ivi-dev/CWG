@@ -3,6 +3,8 @@ import json
 import re
 import sys
 from random import choice as choose
+
+from prompts import Prompts
 from settings import Settings
 from os.path import split, join
 
@@ -132,13 +134,13 @@ class Game:
             positions += f"{str(' ' + str(position)).center(4)}"
         # If a prompt is supplied (usually at the beginning of the game) then display it
         if prompt:
-            Settings.initial_prompt(letters=len(self.word['word']),
-                                    definition=self.word['def'],
-                                    attempts=self.word['attempts'])
+            Prompts.initial_prompt(letters=len(self.word['word']),
+                                   definition=self.word['def'],
+                                   attempts=self.word['attempts'])
         elif short_prompt:
-            Settings.short_prompt(letters=len(self.word['word']),
-                                  definition=self.word['def'],
-                                  attempts=self.word['attempts'])
+            Prompts.short_prompt(letters=len(self.word['word']),
+                                 definition=self.word['def'],
+                                 attempts=self.word['attempts'])
         print('\n', masked_word, '\n')
         print(positions, '\n')
 
