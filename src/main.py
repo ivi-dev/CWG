@@ -1,8 +1,5 @@
-from game import Game
-import tkinter
+from gui_game import Game
 
-# wordGame = Game()
-# wordGame.start()
-
-
+game = Game()
+game.start()
 
