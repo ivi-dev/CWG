@@ -15,3 +15,6 @@ difficulty = 'medium'
 # revealLettersRatio'. Example: On the 'easy' setting if there are 3 letters revealed, one would have 5 (3 + 2)
 # attempts to guess the word. Varies with the 'difficulty'
 attempts = {'easy': 2, 'medium': 1, 'hard': 0}
+
+# Indicates the tim available to guess thee word. Varies with the 'difficulty'
+time = {'easy': 2, 'medium': 1, 'hard': 0}

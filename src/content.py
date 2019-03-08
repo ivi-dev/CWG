@@ -1,7 +1,7 @@
 from tkinter import StringVar, IntVar
 
 # The text for the labels in the info area
-infoLabels = [('ATTEMPTS', '3'), ('SYNONYMS', '\'Autumn\', \'Harvest\''), ('PART OF SPEECH', 'NOUN')]
+infoLabels = [('ATTEMPTS', 'attempts'), ('SYNONYMS', 'synonyms'), ('PART OF SPEECH', 'partOfSpeech')]
 
 # The labels of the buttons. These hint to the code what image filename to choose for each button
 buttonLabels = ['skip', '+a', 'settings', 'exit']
@@ -14,4 +14,7 @@ wordsDB = {}
 
 # The word of the game
 word = {}
+
+# Handles to canvas elements
+canvasElements = {}
 
