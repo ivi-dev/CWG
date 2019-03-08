@@ -9,6 +9,6 @@ mainWindowMinHeight = 500
 letterWidth = 120
 letterHeight = 120
 letterX = 10
-letterY = 100
+letterY = 110
 infoLabelY = 270
 buttonX = 60
