@@ -1,5 +1,3 @@
-from tkinter import StringVar, IntVar
-
 # The text for the labels in the info area
 infoLabels = [('ATTEMPTS', 'attempts'), ('SYNONYMS', 'synonyms'), ('PART OF SPEECH', 'partOfSpeech')]
 
@@ -16,5 +14,7 @@ wordsDB = {}
 word = {}
 
 # Handles to canvas elements
-canvasElements = {}
+canvasElements = {
+    'letters': []
+}
 

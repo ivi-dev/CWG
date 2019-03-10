@@ -1,6 +1,11 @@
+from tkinter.font import Font
+
 mainBGColor = '#3F4041'
 hiddenLetterBG = '#9F5343'
-mainFont = ('Chalkduster', 20)
+markedLetterBG = '#2EB5F1'
+guessedLetterBG = '#000'
+mainFont = ('Chalkduster', -20)
+ptToInchConversionRatio = 0.014
 white = '#fff'
 fadedWhite = '#cccccc'
 lightGrey = '#999897'

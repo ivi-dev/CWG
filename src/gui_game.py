@@ -5,6 +5,8 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from os.path import join, split
 from random import choice
+from threading import Timer
+from playsound import playsound
 
 import gui_settings as settings
 from PIL import Image
@@ -23,13 +25,13 @@ class Game(ttk.Frame):
 
         self.mainWindow = self.winfo_toplevel()
         self.mainCanvas = self.thinLineImg = None
-
-        # Initialize the words database
+        self.wordStructure = []
+        self.wordIsActive = False
+        self.timerActive = True
+        self.timer = None
+        self.markedLetter = None
         self.load_words(join(split(sys.argv[0])[0], 'data', 'words.json') if words_file is None
                         else str(words_file))
-
-        self.wordIsActive = False
-
         self.build_ui()
 
     @staticmethod
@@ -56,6 +58,7 @@ class Game(ttk.Frame):
         self.mainWindow.maxsize(650, 450)
         self.mainWindow.rowconfigure(0, weight=1)
         self.mainWindow.columnconfigure(0, weight=1)
+        self.mainWindow.bind('<KeyRelease>', self.__guess_letter)
 
         # Make the main frame fluid/extensible
         self.columnconfigure(0, weight=1)
@@ -105,10 +108,10 @@ class Game(ttk.Frame):
             if i != 0:
                 style.infoLabelY += 50
             content.canvasElements[label[1]] = self.mainCanvas.create_text(20, style.infoLabelY, text=label[0] + ': ' +
-                                                                            (Game.pretty_list(content.word[label[1]])
-                                                                             if Game.get_type(content.word[label[1]]) ==
-                                                                                'list'
-                                                                             else str(content.word[label[1]])),
+                                                                           (Game.pretty_list(content.word[label[1]])
+                                                                            if Game.get_type(content.word[label[1]]) ==
+                                                                            'list'
+                                                                            else str(content.word[label[1]])),
                                                                            fill=style.white,
                                                                            font=style.mainFont, anchor=tk.W)
             self.mainCanvas.create_image(0, style.infoLabelY + 25, image=thin_line_img, anchor=tk.W)
@@ -123,9 +126,9 @@ class Game(ttk.Frame):
                                              anchor=tk.N+tk.W)
 
         # The time remaining
-        self.mainCanvas.create_text(self.mainCanvas.coords(clock)[0] + 43,
-                                    self.mainCanvas.coords(clock)[1] + 78, text='21',
-                                    fill=style.fadedWhite, font=(style.mainFont[0], 40), anchor=tk.W)
+        content.canvasElements['time'] = self.mainCanvas.create_text(self.mainCanvas.coords(clock)[0] + 65,
+                                    self.mainCanvas.coords(clock)[1] + 78, text=Game.sec_to_min(content.word['time']),
+                                    fill=style.fadedWhite, font=(style.mainFont[0], 30))
 
         # The buttons
         button_images = [Game.register_image(PhotoImage(Image.open(
@@ -169,15 +172,101 @@ class Game(ttk.Frame):
                                                             style.letterY + style.letterHeight,
                                                             fill=style.hiddenLetterBG,
                                                             outline=style.hiddenLetterBG))
+            self.mainCanvas.tag_bind(letters[i], '<1>', self.__mark_letter)
             i += 1
         else:
             # Center the letters
             style.letterX = 10
             last_letter_x = self.mainCanvas.coords(letters[-1])[2]
             for letter in letters:
-                self.mainCanvas.move(letter,
-                                     (style.mainWindowMinWidth - last_letter_x) / 2 - style.letterX, 0)
+                self.mainCanvas.move(letter, (style.mainWindowMinWidth - last_letter_x) / 2 - style.letterX, 0)
             content.canvasElements['letters'] = letters
+
+    def __guess_letter(self, event):
+        """Process a typed letter and see if its guessed position matches the real one
+
+        :param event: The event as passed by the tkinter binding
+        """
+        if self.markedLetter is not None:
+            letter, i, letter__ = str(event.char).upper(), 0, None
+            for letter_ in content.canvasElements['letters']:
+                letter__ = letter_
+                if letter_ == self.markedLetter:
+                    break
+                i += 1
+            if content.word['word'][i] == letter:  # If the letters match...
+                self.reveal_letter(letter__, letter)
+            else:
+                # TODO: Maybe play a sound
+                pass
+            # Decrement the attempts
+            content.word['attempts'] -= 1
+            self.update_attempts(content.word['attempts'])
+            if content.word['attempts'] == 0:  # If no more attempts are left...
+                self.stop_clock()
+                self.signal_game_over()
+
+    def signal_game_over(self, sound: str):
+        """Signal game over. That happens when the attempts are exhausted or the time ran out
+
+        :param sound: The path to the sound file
+        """
+        playsound(sound, False)
+
+    def correct_guess(self, sound) -> bool:
+        """Signal a correct letter guess"""
+        pass
+
+    def update_attempts(self, attempts: int):
+        """Update the displayed attempts
+
+        :param attempts: The curremt number of attempts
+        """
+        self.mainCanvas.itemconfigure(content.canvasElements['attempts'],
+                                      text=str(self.mainCanvas.itemcget(content.canvasElements['attempts'], 'text'))
+                                      .split()[0] + ' ' + str(attempts))
+
+    def reveal_letter(self, letter_id: int, word_letter: str) -> tuple:
+        """Reveal a letter on the canvas
+
+        :param letter_id: The canvas id of the letter to reveal
+        :param word_letter: The letter from a word that's being guessed
+        :returns: A 2-tuple with the canvas letter id and the revealed letter
+        """
+        self.mainCanvas.itemconfigure(letter_id, fill=style.guessedLetterBG)
+        letter_box = self.mainCanvas.bbox(letter_id)
+        letter_box_width = letter_box_height = letter_box[2] - letter_box[0]
+        self.mainCanvas.create_text(letter_box[0] + letter_box_width // 2,
+                                    letter_box[1] + letter_box_height // 2,
+                                    text=word_letter, font=(style.mainFont[0], -round(letter_box_width * 0.75)),
+                                    fill=style.white)
+        return letter_id, word_letter
+
+    def __mark_letter(self, event: tk.Event):
+        """Marks a letter as active, meaning that any key press is going to be interpreted
+        as an attempt to guess that letter
+
+        :param event: The event as passed by the tkinter binding
+        """
+        click_coordinates = (event.x, event.y)
+        for letter in content.canvasElements['letters']:
+            letter_box = self.mainCanvas.bbox(letter)
+            letter_top_left_x = letter_box[0]
+            letter_top_left_y = letter_box[1]
+            letter_bottom_right_x = letter_box[2]
+            letter_bottom_right_y = letter_box[3]
+            if letter_top_left_x < click_coordinates[0] < letter_bottom_right_x and \
+                    letter_top_left_y < click_coordinates[1] < letter_bottom_right_y:
+                if self.mainCanvas.itemcget(letter, 'fill') == style.hiddenLetterBG:
+                    self.mainCanvas.itemconfigure(letter, fill=style.markedLetterBG)
+                    for letter_ in content.canvasElements['letters']:  # Reset the others
+                        if letter_ != letter and self.mainCanvas.itemcget(letter_, 'fill') != style.guessedLetterBG:
+                            self.mainCanvas.itemconfigure(letter_, fill=style.hiddenLetterBG)
+                    self.markedLetter = letter
+                else:
+                    self.mainCanvas.itemconfigure(letter, fill=style.hiddenLetterBG)
+                    self.markedLetter = None
+                break
 
     def load_words(self, words_file: str) -> dict:
         """Load a list of words from a JSON file
@@ -204,9 +293,9 @@ class Game(ttk.Frame):
                     and 'definitions' in keys and len(words_obj[_word]['definitions']) != 0 \
                     and 'synonyms' in words_obj[_word]['definitions'][0].keys():
                 _dict[_word.upper()] = {
-                    'word': _word.upper() + '.',
+                    'word': _word.upper(),
                     'partOfSpeech': str(words_obj[_word]['definitions'][0]['partOfSpeech']).capitalize(),
-                    'def': str(words_obj[_word]['definitions'][0]['definition']).capitalize(),
+                    'def': str(words_obj[_word]['definitions'][0]['definition']).capitalize() + '.',
                     'synonyms': list(words_obj[_word]['definitions'][0]['synonyms']).copy()
                 }
         content.wordsDB = _dict
@@ -223,11 +312,92 @@ class Game(ttk.Frame):
         chosen_word['showLetters'] = round(len(chosen_word['word']) * settings.revealLettersRatio[settings.difficulty])
         chosen_word['attempts'] = (round(len(chosen_word['word']) * settings.revealLettersRatio[settings.difficulty])) \
             + settings.attempts[settings.difficulty]
+        chosen_word['time'] = settings.time[settings.difficulty]
         content.word = chosen_word
+        self.update_word_structure()
         return chosen_word
 
+    def update_word_structure(self, letter: str = None, position: int = None) -> list:
+        """Update the word structure. The word structure is list that keeps track what state a word's letters are in,
+        either 'hidden' or 'revealed'
+
+        :param letter: A letter to put in the word structure
+        :param position: An integer denoting the position in the word structure at which to put the letter
+        :returns: The updated word structure
+        """
+        word_length = len(content.word['word'])
+        # If a word structure initialization attempt is made...
+        # ...(usually at the beginning of the game on an empty 'wordDict')...
+        if letter is None and position is None:
+            self.wordStructure[:], _letter = [], 0
+            # Pick some random positions...
+            positions, random_positions, i = list(range(word_length)), [], 0
+            while i < round(word_length * settings.revealLettersRatio[settings.difficulty]):
+                _position = choice(positions)
+                random_positions.append(_position)
+                positions.remove(_position)
+                i += 1
+            # ...and build the word structure
+            else:
+                while _letter < word_length:
+                    if _letter in random_positions:
+                        self.wordStructure.append(content.word['word'][_letter])
+                    else:
+                        self.wordStructure.append('_')
+                    _letter += 1
+
+        # Else - just update the word structure with a letter
+        elif letter is not None and position is not None:
+            self.wordStructure[position] = letter.upper()
+        else:
+            raise Exception('You have to either specify both \'letter\' and \'position\' '
+                            'arguments or leave them both None')
+        return self.wordStructure
+
     @staticmethod
-    def pretty_list(list_: list, enclose_char: str = "'", sep_char: str = ', ', text_transform: str = 'capitalize') -> str:
+    def sec_to_min(seconds: int) -> str:
+        """Convert seconds to minutes
+
+        :param seconds: A number of seconds
+        :returns: The minutes+seconds representation of a number of seconds
+        """
+        if seconds == 0:
+            raise ZeroDivisionError()
+        seconds_ = abs(seconds)
+        initial_calc = str(round(seconds_ / 60, 2))
+        minutes, seconds_fraction, seconds = initial_calc.split('.')[0], initial_calc.split('.')[1], 0
+        seconds = str(seconds_ - (int(minutes) * 60))
+        # if seconds_fraction != '0':
+        #     seconds = float('0.' + seconds_fraction) * 60
+        # else:
+        #     seconds = '00'
+        seconds_final = seconds if seconds != '0' else '00'
+        return minutes + ':' + seconds_final
+
+    def count_down(self):
+        """Decrement the remaining time"""
+        if self.timerActive:
+            current_time: str = self.mainCanvas.itemcget(content.canvasElements['time'], 'text')
+            current_time_split = current_time.split(':')
+            current_minutes, current_seconds = int(current_time_split[0]), int(current_time_split[1])
+            if current_seconds == 0 and current_minutes != 0:
+                current_minutes -= 1
+                current_seconds = 59
+            elif current_seconds == 0 and current_minutes == 0:
+                return
+            else:
+                current_seconds -= 1
+            current_seconds_corrected = str(current_seconds) if current_seconds >= 10 else '0' + str(current_seconds)
+            self.mainCanvas.itemconfigure(content.canvasElements['time'],
+                                          text=str(current_minutes) + ':' + current_seconds_corrected)
+            self.timer = Timer(1.0, self.count_down)
+            self.timer.start()
+
+    @staticmethod
+    def pretty_list(list_: list,
+                    enclose_char: str = "'",
+                    sep_char: str = ', ',
+                    text_transform: str = 'capitalize') -> str:
         """Return a clean string view of a list
 
         :param list_: A non-empty list of items
@@ -269,7 +439,24 @@ class Game(ttk.Frame):
         """
         chosen_word = self.choose_word()
         self.refresh_ui()
+        self.restart_clock()
         return chosen_word
+
+    def reset_clock(self):
+        """Reset the time"""
+        self.mainCanvas.itemconfigure(content.canvasElements['time'],
+                                      text=Game.sec_to_min(settings.time[settings.difficulty]))
+
+    def restart_clock(self):
+        """Restart the timer"""
+        self.reset_clock()
+        self.timerActive = True
+        self.timer.cancel()
+        self.count_down()
+
+    def stop_clock(self):
+        """Stop the time"""
+        self.timerActive = False
 
     def __reveal_letter(self) -> str:
         """Reveal an extra letter
@@ -302,9 +489,7 @@ class Game(ttk.Frame):
         self.place_letters()
 
         # Update the attempts
-        self.mainCanvas.itemconfigure(content.canvasElements['attempts'],
-                                      text=str(self.mainCanvas.itemcget(content.canvasElements['attempts'], 'text'))
-                                      .split()[0] + ' ' + str(content.word['attempts']))
+        self.update_attempts(content.word['attempts'])
 
         # Update the synonyms
         self.mainCanvas.itemconfigure(content.canvasElements['synonyms'],
@@ -313,15 +498,13 @@ class Game(ttk.Frame):
 
         # Update the part of speech
         self.mainCanvas.itemconfigure(content.canvasElements['partOfSpeech'],
-                                      text=Game.pretty_list(str(self.mainCanvas.itemcget(content.canvasElements['partOfSpeech'], 'text'))
+                                      text=Game.pretty_list(str(
+                                          self.mainCanvas.itemcget(content.canvasElements['partOfSpeech'], 'text'))
                                       .split()[:3], '', ' ', 'upper') + ' ' + str(content.word['partOfSpeech']))
         # TODO: Find out why there's a little comma-like character in the output on screen
 
-        # Update the time
-        self.mainCanvas.itemconfigure(content.canvasElements['wordDef'], text=content.word['def'])
-
     def start(self):
         """Start the game"""
-
+        self.count_down()
         self.mainloop()
 
