@@ -16,5 +16,5 @@ difficulty = 'medium'
 # attempts to guess the word. Varies with the 'difficulty'
 attempts = {'easy': 2, 'medium': 1, 'hard': 0}
 
-# Indicates the tim available to guess thee word. Varies with the 'difficulty'
-time = {'easy': 2, 'medium': 1, 'hard': 0}
+# Indicates the time available to guess the word. Varies with the 'difficulty'. Expressed in seconds
+time = {'easy': 181, 'medium': 121, 'hard': 61}
