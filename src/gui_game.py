@@ -76,11 +76,11 @@ class Game(ttk.Frame):
 
         # Place the background image
         self.mainCanvas.create_image(170, 250, image=Game.register_image(PhotoImage(Image.open(
-            os.path.abspath('src/data/speech_bubble_550x369.png')))))
+            os.path.abspath('src/data/images/speech_bubble_550x369.png')))))
 
         # Place the logo image
         logo_img = self.mainCanvas.create_image(40, 40, image=Game.register_image(PhotoImage(Image.open(
-                                             os.path.abspath('src/data/logo_50x50.png')))))
+                                             os.path.abspath('src/data/images/logo_50x50.png')))))
 
         # The word definition
         content.canvasElements['wordDef'] = self.mainCanvas.create_text(80, 20, text=content.word['def'],
@@ -95,11 +95,11 @@ class Game(ttk.Frame):
 
         # THE INFO AREA
         # The thin line
-        thin_line_img = Game.register_image(PhotoImage(Image.open(os.path.abspath('src/data/line.png'))))
+        thin_line_img = Game.register_image(PhotoImage(Image.open(os.path.abspath('src/data/images/line.png'))))
 
         # Place the thick line
         self.mainCanvas.create_image(2, 240, image=Game.register_image(PhotoImage(Image.open(
-                                    os.path.abspath('src/data/thick_line.png')))),
+                                    os.path.abspath('src/data/images/thick_line.png')))),
                                     anchor=tk.W)
 
         # The info labels
@@ -122,7 +122,7 @@ class Game(ttk.Frame):
         # The clock
         clock = self.mainCanvas.create_image(thin_line_img.width() + 80, style.infoLabelY,
                                              image=Game.register_image(PhotoImage(Image.open(
-                                                      os.path.abspath('src/data/clock_low_shadow.png')))),
+                                                      os.path.abspath('src/data/images/clock_low_shadow.png')))),
                                              anchor=tk.N+tk.W)
 
         # The time remaining
@@ -132,7 +132,7 @@ class Game(ttk.Frame):
 
         # The buttons
         button_images = [Game.register_image(PhotoImage(Image.open(
-            os.path.abspath('src/data/' + button + '_button.png')))) for button
+            os.path.abspath('src/data/images/' + button + '_button.png')))) for button
                          in content.buttonLabels]
         buttons, bindings, i = [], [self.__skip_word, self.__reveal_letter, self.__settings, self.__exit_game], 0
         for buttonImg in button_images:
@@ -187,7 +187,7 @@ class Game(ttk.Frame):
 
         :param event: The event as passed by the tkinter binding
         """
-        if self.markedLetter is not None:
+        if self.markedLetter is not None and content.word['attempts'] != 0:
             letter, i, letter__ = str(event.char).upper(), 0, None
             for letter_ in content.canvasElements['letters']:
                 letter__ = letter_
@@ -196,9 +196,9 @@ class Game(ttk.Frame):
                 i += 1
             if content.word['word'][i] == letter:  # If the letters match...
                 self.reveal_letter(letter__, letter)
+                self.signal_correct_guess()
             else:
-                # TODO: Maybe play a sound
-                pass
+                self.signal_incorrect_guess()
             # Decrement the attempts
             content.word['attempts'] -= 1
             self.update_attempts(content.word['attempts'])
@@ -206,21 +206,51 @@ class Game(ttk.Frame):
                 self.stop_clock()
                 self.signal_game_over()
 
-    def signal_game_over(self, sound: str):
-        """Signal game over. That happens when the attempts are exhausted or the time ran out
+    def signal_correct_guess(self, sound: str = 'src/data/sound/correct.wav'):
+        """Signal with sound the a letter was guessed correctly
 
-        :param sound: The path to the sound file
+        :param sound: The path to the sound file. Default is src/data/sound/correct.wav
         """
         playsound(sound, False)
 
-    def correct_guess(self, sound) -> bool:
-        """Signal a correct letter guess"""
-        pass
+    def signal_incorrect_guess(self, sound: str = 'src/data/sound/incorrect.wav'):
+        """Signal with sound the a letter was guessed incorrectly
+
+        :param sound: The path to the sound file. Default is src/data/sound/incorrect.wav
+        """
+        playsound(sound, False)
+
+    def signal_game_over(self, sound: str = 'src/data/sound/game_over.wav'):
+        """Signal game over. That happens when the attempts are exhausted or the time ran out
+
+        :param sound: The path to the sound file. Default is src/data/sound/game_over.wav
+        """
+        playsound(sound, False)
+        content.word['attempts'] = 0
+        self.update_attempts(0)
+        self.markedLetter = None
+        self.reset_letters()
+
+    def reset_letters(self, letters: list = None) -> bool:
+        """Unmark letters of the word
+
+        :param letters: A list of canvas ids fo letters to reset (return to normal background color)
+        """
+        if letters is not None:
+            for letter in letters:
+                self.mainCanvas.itemconfigure(letter, fill=style.hiddenLetterBG)
+            else:
+                return True
+        else:
+            for letter in content.canvasElements['letters']:
+                self.mainCanvas.itemconfigure(letter, fill=style.hiddenLetterBG)
+            else:
+                return True
 
     def update_attempts(self, attempts: int):
         """Update the displayed attempts
 
-        :param attempts: The curremt number of attempts
+        :param attempts: The current number of attempts
         """
         self.mainCanvas.itemconfigure(content.canvasElements['attempts'],
                                       text=str(self.mainCanvas.itemcget(content.canvasElements['attempts'], 'text'))
@@ -240,6 +270,7 @@ class Game(ttk.Frame):
                                     letter_box[1] + letter_box_height // 2,
                                     text=word_letter, font=(style.mainFont[0], -round(letter_box_width * 0.75)),
                                     fill=style.white)
+        self.markedLetter = None
         return letter_id, word_letter
 
     def __mark_letter(self, event: tk.Event):
@@ -257,6 +288,8 @@ class Game(ttk.Frame):
             letter_bottom_right_y = letter_box[3]
             if letter_top_left_x < click_coordinates[0] < letter_bottom_right_x and \
                     letter_top_left_y < click_coordinates[1] < letter_bottom_right_y:
+                if self.mainCanvas.itemcget(letter, 'fill') == style.guessedLetterBG:
+                    break
                 if self.mainCanvas.itemcget(letter, 'fill') == style.hiddenLetterBG:
                     self.mainCanvas.itemconfigure(letter, fill=style.markedLetterBG)
                     for letter_ in content.canvasElements['letters']:  # Reset the others
@@ -384,6 +417,7 @@ class Game(ttk.Frame):
                 current_minutes -= 1
                 current_seconds = 59
             elif current_seconds == 0 and current_minutes == 0:
+                self.signal_game_over()
                 return
             else:
                 current_seconds -= 1
