@@ -312,8 +312,7 @@ class Game(ttk.Frame):
         try:
             _words_file = open(words_file)
         except (OSError, FileNotFoundError):
-            # TODO: Decide what to do if the words file is not accessible
-            raise
+            raise Exception('The game\'s words database is not accessible for some reason. Terminating.')
         finally:
             if _words_file is not None:
                 words_obj = json.loads(_words_file.read())
@@ -535,7 +534,6 @@ class Game(ttk.Frame):
                                       text=Game.pretty_list(str(
                                           self.mainCanvas.itemcget(content.canvasElements['partOfSpeech'], 'text'))
                                       .split()[:3], '', ' ', 'upper') + ' ' + str(content.word['partOfSpeech']))
-        # TODO: Find out why there's a little comma-like character in the output on screen
 
     def start(self):
         """Start the game"""
