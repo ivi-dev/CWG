@@ -6,6 +6,8 @@ import tkinter.ttk as ttk
 from os.path import join, split
 from random import choice
 from threading import Timer
+from typing import Tuple
+
 from playsound import playsound
 
 import gui_settings as settings
@@ -23,6 +25,7 @@ class Game(ttk.Frame):
         """
         super().__init__()
 
+        # General items
         self.mainWindow = self.winfo_toplevel()
         self.mainCanvas = self.thinLineImg = None
         self.wordStructure = []
@@ -30,6 +33,15 @@ class Game(ttk.Frame):
         self.timerActive = True
         self.timer = None
         self.markedLetter = None
+
+        # Settings related items
+        self.settingsWindow = None
+        self.settingsMainCanvas = None
+        self.activeSetting = None
+        self.activeOptions = []
+        self.activeOptionsWindow = None
+
+        self.init_settings()
         self.load_words(join(split(sys.argv[0])[0], 'data', 'words.json') if words_file is None
                         else str(words_file))
         self.build_ui()
@@ -49,27 +61,58 @@ class Game(ttk.Frame):
         else:
             return img
 
-    def configure_app(self):
-        """Setup the canvas for drawing the UI"""
+    def configure_window(self, window: tk.Toplevel, title: str = settings.programName + ' ' + settings.programVersion,
+                         min_size: Tuple[int, int] = (style.mainWindowMinWidth, style.mainWindowMinHeight),
+                         max_size: Tuple[int, int] = (style.mainWindowMinWidth, style.mainWindowMinHeight),
+                         **bindings) -> tk.Toplevel:
+        """Setup the main window and frame for drawing the UI
+
+        :param window: The window to configure
+        :param title: The title of the window
+        :param min_size: The minimum size of the window
+        :param max_size: The maximum size of the window
+        :param bindings: A key-value pairs of the event types and handlers to bind to the window
+        """
         
         # Setup the main/root window
-        self.mainWindow.title(settings.programName + ' ' + settings.programVersion)
-        self.mainWindow.minsize(style.mainWindowMinWidth, style.mainWindowMinHeight)
-        self.mainWindow.maxsize(650, 450)
-        self.mainWindow.rowconfigure(0, weight=1)
-        self.mainWindow.columnconfigure(0, weight=1)
-        self.mainWindow.bind('<KeyRelease>', self.__guess_letter)
+        window.title(title)
+        window.minsize(min_size[0], min_size[1])
+        window.maxsize(max_size[0], max_size[1])
+        window.rowconfigure(0, weight=1)
+        window.columnconfigure(0, weight=1)
+        for eventType in bindings:
+            self.mainWindow.bind('<' + str(eventType) + '>', bindings[eventType])
+        else:
+            self.sticky_frame(self)
+            return window
 
+    def sticky_frame(self, frame: tk.Widget) -> tk.Widget:
+        """Make a frame resizable
+
+        :param frame: The frame to configure
+        """
         # Make the main frame fluid/extensible
-        self.columnconfigure(0, weight=1)
-        self.rowconfigure(0, weight=1)
-        self.grid(sticky=tk.W + tk.E + tk.N + tk.S)
+        frame.columnconfigure(0, weight=1)
+        frame.rowconfigure(0, weight=1)
+        frame.grid(sticky=tk.W + tk.E + tk.N + tk.S)
+        return frame
+
+    def init_settings(self, settings_file: str = settings.settingsFile):
+        """Initialize the settings with the data from the settings file"""
+        settings_ = {}
+        with open(settings_file, 'r') as file:
+            settings_ = json.loads(file.read())
+        if settings_ == {}:
+            raise IOError('Could not update the settings. Make sure that the settings file is where it\'s '
+                          'supposed to be and is in the correct JSON syntax.')
+        else:
+            for key in settings_.keys():
+                setattr(settings, key, settings_[key])
 
     def build_ui(self):
-        """Build the UI"""
-
-        # First, configure the canvas
-        self.configure_app()
+        """Build the main game's UI"""
+        # Configure the main window/canvas
+        self.configure_window(self.mainWindow, KeyPress=self.__guess_letter, Destroy=self.__exit_game)
 
         self.mainCanvas = tk.Canvas(self, bg=style.mainBGColor, highlightthickness=0, relief='ridge')
         self.mainCanvas.grid(sticky=tk.W + tk.E + tk.N + tk.S)
@@ -151,6 +194,201 @@ class Game(ttk.Frame):
             for button in buttons:
                 self.mainCanvas.move(button, (style.mainWindowMinWidth - (last_button_x + button_images[-1].width()))
                                      / 2 - style.buttonX / 2, 0)
+
+    def build_settings_ui(self):
+        """Construct the settings window's UI"""
+        # Main frame
+        settings_main_frame = ttk.Frame(self.settingsWindow)
+        self.sticky_frame(settings_main_frame)
+
+        # Main canvas
+        settings_main_canvas = tk.Canvas(settings_main_frame, bg=style.mainBGColor, highlightthickness=0,
+                                         relief='ridge')
+        settings_main_canvas.grid(sticky=tk.W + tk.E + tk.N + tk.S)
+        self.settingsMainCanvas = settings_main_canvas
+
+        # The background image
+        settings_main_canvas.create_image(style.mainWindowMinWidth - style.mainWindowMinWidth // 5,
+                                          style.mainWindowMinHeight // 5,
+                                          image=Game.register_image(PhotoImage(Image.open(
+                                            os.path.abspath('src/data/images/cog_wheel.png')))))
+
+        # The settings items
+        thin_line_img = Game.register_image(PhotoImage(Image.open(os.path.abspath('src/data/images/line.png'))))
+
+        labels, lines, i = [], [], 0
+        for label in content.settingsLabels:
+            if i != 0:
+                style.settingsLabelY += 50
+            content.canvasElements['settingsLabels'].append((settings_main_canvas.create_text(0, style.settingsLabelY,
+                                                             text=label[0] + ': ' +
+                                                             str(getattr(settings, label[-1])).capitalize(),
+                                                             fill=style.white,
+                                                             font=style.mainFont, anchor=tk.W),
+                                                             label[2], label[0]))
+            labels.append(content.canvasElements['settingsLabels'][i][0])
+            settings_main_canvas.tag_bind(content.canvasElements['settingsLabels'][i][0], '<1>', self.__show_options)
+            lines.append(settings_main_canvas.create_image(0, style.settingsLabelY + 25, image=thin_line_img,
+                                                           anchor=tk.W))
+            i += 1
+        else:
+            # Center the labels
+            style.settingsLabelY = 50
+            for label in labels:
+                label_bbox = settings_main_canvas.bbox(label)
+                label_width = label_bbox[2] - label_bbox[0]
+                settings_main_canvas.move(label, (style.mainWindowMinWidth - label_width) // 2, 0)
+            else:
+                for line in lines:
+                    line_bbox = settings_main_canvas.bbox(line)
+                    line_width = line_bbox[2] - line_bbox[0]
+                    settings_main_canvas.move(line, (style.mainWindowMinWidth - line_width) // 2, 0)
+                else:
+                    first_label_bbox = settings_main_canvas.bbox(labels[0])
+                    last_label_bbox = settings_main_canvas.bbox(labels[-1])
+                    first_line_bbox = settings_main_canvas.bbox(lines[0])
+                    last_line_bbox = settings_main_canvas.bbox(lines[-1])
+
+                    settings_block_height = last_line_bbox[2] - first_label_bbox[0]
+                    for item in (labels + lines):
+                        settings_main_canvas.move(item, 0, (style.mainWindowMinHeight - settings_block_height) // 10)
+
+        # The buttons
+        button_images = [Game.register_image(PhotoImage(Image.open(
+            os.path.abspath('src/data/images/' + button + '_button.png')))) for button
+            in content.settingsButtonLabels]
+        buttons, bindings, i = [], [self.__apply_settings, self.__cancel_settings], 0
+        for buttonImg in button_images:
+            if i != 0:
+                x = 0
+                for index in range(i):
+                    x += button_images[index].width() + 20
+                style.buttonX = x + 60
+            buttons.append(settings_main_canvas.create_image(style.buttonX, 425, image=buttonImg, anchor=tk.N + tk.W))
+            settings_main_canvas.tag_bind(buttons[i], '<1>', bindings[i])
+            i += 1
+        else:
+            # Center the buttons
+            style.buttonX = 60
+            last_button_x = settings_main_canvas.coords(buttons[-1])[1]
+            for button in buttons:
+                settings_main_canvas.move(button, (style.mainWindowMinWidth - (last_button_x + button_images[-1].width())) + 40, 0)
+
+    def __show_options(self, event: tk.Event):
+        """Show the options for a setting item
+
+        :param event: The tk event object
+        """
+        # Get the location of the mouse click
+        click_location_x = event.x
+        click_location_y = event.y
+        # Get the text value of the option label that was clicked
+        clicked_label = None
+        for label in content.canvasElements['settingsLabels']:
+            label_bbox = self.settingsMainCanvas.bbox(label[0])
+            if label_bbox[0] < click_location_x < label_bbox[2] and label_bbox[1] < click_location_y < label_bbox[3]:
+                clicked_label = label
+                break
+        self.activeSetting = clicked_label[0]  # The settings that is being reviewed
+        clicked_label_bbox = self.settingsMainCanvas.bbox(clicked_label[0])
+        # Show the option window and remove any visible ones
+        self.clear_options_windows()
+        option_window = self.settingsMainCanvas.create_rectangle(clicked_label_bbox[0], clicked_label_bbox[1] +
+                                                 (clicked_label_bbox[3] - clicked_label_bbox[1]), clicked_label_bbox[2],
+                                                 clicked_label_bbox[3] +
+                                                 (clicked_label_bbox[3] - clicked_label_bbox[1]) + 25,
+                                                 fill=style.darkGrey, outline=style.grey, width=4)
+        self.activeOptionsWindow = option_window  # The currently open options box
+        # List the options inside of the window
+        option_window_bbox = self.settingsMainCanvas.bbox(option_window)
+        options = getattr(settings, clicked_label[1] + 'Options')
+        fill = style.white
+        selected_option = str(self.settingsMainCanvas.itemcget(clicked_label[0], 'text')).split(':')[1].strip()
+        x, i, options_ = option_window_bbox[0] + 15, 0, []
+        for option in options:
+            if i != 0:
+                previous_option_bbox = self.settingsMainCanvas.bbox(options_[i - 1])
+                x += previous_option_bbox[2] - previous_option_bbox[0] + 20
+            fill = style.white if option == selected_option else style.grey
+            options_.append(self.settingsMainCanvas.create_text(x, option_window_bbox[1] + 15,
+                                                                text=option, font=(style.mainFont[0], 18),
+                                                                fill=fill, anchor=tk.NW))
+            self.activeOptions = options_
+            self.settingsMainCanvas.tag_bind(options_[i], '<1>', self.__select_option)
+            i += 1
+        else:
+            # Center the options inside the options window
+            last_option_x = self.settingsMainCanvas.bbox(options_[-1])[2]
+            x_move = (option_window_bbox[2] - last_option_x) // 2 - 10
+            for option in options_:
+                self.settingsMainCanvas.move(option, x_move, 0)
+
+    def clear_options_windows(self):
+        """Removes an option widow and the options inside"""
+        for option_ in self.activeOptions:
+            self.settingsMainCanvas.delete(option_)
+        self.settingsMainCanvas.delete(self.activeOptionsWindow)
+
+    def __select_option(self, event: tk.Event):
+        """Handles a selection of an option
+
+        :param event: The tk event object
+        """
+        click_point = (event.x, event.y)
+        for option in self.activeOptions:
+            option_bbox = self.settingsMainCanvas.bbox(option)
+            if option_bbox[0] < click_point[0] < option_bbox[2] and option_bbox[1] < click_point[1] < option_bbox[3]:
+                option_text = self.settingsMainCanvas.itemcget(option, 'text')
+                active_setting_label = str(self.settingsMainCanvas.itemcget(self.activeSetting, 'text')).split(':')[0]
+                self.settingsMainCanvas.itemconfigure(self.activeSetting, text=active_setting_label + ': ' +
+                                                      option_text)
+                # Set the corresponding option to the selected value
+                for option__ in content.canvasElements['settingsLabels']:
+                    if option__[2] == active_setting_label:
+                        setattr(settings, option__[1], option_text)
+                # Remove the options window
+                self.clear_options_windows()
+                break
+
+    def __apply_settings(self, event: tk.Event):
+        """Apply settings
+
+        :param event: The tk event
+        """
+        self.write_settings()
+        self.close_window(self.settingsWindow, 'settingsWindow')
+
+    def __cancel_settings(self, event: tk.Event):
+        """Cancel put of the settings
+
+        :param event: The tk event
+        """
+        self.close_window(self.settingsWindow, 'settingsWindow')
+
+    def write_settings(self, settings_file: str = settings.settingsFile):
+        """Write settings to a file"""
+        # First collect the current state of the settings
+        settings_ = {}
+        for setting in content.canvasElements['settingsLabels']:
+            settings_[setting[1]] = str(getattr(settings, setting[1]))
+        else:  # and then write them to a file
+            file_id = None
+            with open(settings_file, 'w') as settings_file:
+                file_id = settings_file.write(json.dumps(settings_, sort_keys=True, indent=4))
+            if file_id is None:
+                raise IOError('Could not update the settings. Make sure that the settings file is where it\'s '
+                              'supposed to be and is in the correct JSON syntax.')
+
+    def close_window(self, window: tk.Toplevel, window_ref: str = ''):
+        """Close a gui window
+
+        :param window: The tk.TopLevel object to close
+        :param window_ref: A name of a variable holding a reference to the window.
+         If this value is not an empty string the reference will be cleared
+        """
+        window.destroy()
+        if window_ref != '':
+            setattr(self, window_ref, None)
 
     def place_letters(self):
         """Place a word's letters on screen"""
@@ -482,13 +720,16 @@ class Game(ttk.Frame):
 
     def restart_clock(self):
         """Restart the timer"""
+        self.timer.cancel()
         self.reset_clock()
         self.timerActive = True
-        self.timer.cancel()
         self.count_down()
 
     def stop_clock(self):
         """Stop the time"""
+        if self.timer is not None:
+            self.timer.cancel()
+        self.timer = None
         self.timerActive = False
 
     def __reveal_letter(self) -> str:
@@ -498,19 +739,27 @@ class Game(ttk.Frame):
         """
         pass
 
-    def __settings(self) -> bool:
-        """Go to the settings screen
+    def __settings(self, event: tk.Event):
+        """Go to the settings screen"""
+        # If a settings windows is not open
+        if self.settingsWindow is None:
+            self.settingsWindow = tk.Toplevel(width=200, height=100, takefocus=True)
+            self.settingsWindow.lift()
+            self.configure_window(self.settingsWindow, 'Settings')
+            self.build_settings_ui()
+        else:  # Else, move the focus to the already open settings window
+            self.settingsWindow.focus_set()
 
-        :returns: True on successful navigation, False on failure
-        """
-        pass
-
-    def __exit_game(self) -> bool:
+    def __exit_game(self, event: tk.Event):
         """Stop and exit the game
 
-        :returns: True on successful navigation, False on failure
+        :param event: The event object passed by the binding
         """
-        pass
+        try:
+            self.stop_clock()
+            self.quit()
+        except KeyboardInterrupt:
+            pass
 
     def refresh_ui(self):
         """Refresh the UI, normally when a new word is chosen"""
