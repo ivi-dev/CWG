@@ -1,3 +1,5 @@
 # Changelog
 
-* Code optimizations
+* GUI
+* Sound effects
+* Ability to edit settings
