@@ -44,7 +44,7 @@ class Game(ttk.Frame):
         self.init_settings()
         self.load_words(join(split(sys.argv[0])[0], 'data', 'words.json') if words_file is None
                         else str(words_file))
-        self.build_ui()
+        self.build_main_ui()
 
     @staticmethod
     def register_image(img: PhotoImage) -> PhotoImage:
@@ -109,7 +109,7 @@ class Game(ttk.Frame):
             for key in settings_.keys():
                 setattr(settings, key, settings_[key])
 
-    def build_ui(self):
+    def build_main_ui(self):
         """Build the main game's UI"""
         # Configure the main window/canvas
         self.configure_window(self.mainWindow, KeyPress=self.__guess_letter, Destroy=self.__exit_game)
@@ -128,7 +128,7 @@ class Game(ttk.Frame):
         # The word definition
         content.canvasElements['wordDef'] = self.mainCanvas.create_text(80, 20, text=content.word['def'],
                                                                         fill=style.white,
-                                                                        font=style.mainFont,
+                                                                        font=(style.mainFont[0], 16),
                                                                         width=style.mainWindowMinWidth -
                                                                         self.mainCanvas.bbox(logo_img)[2] * 2,
                                                                         anchor=tk.NW)
@@ -171,13 +171,13 @@ class Game(ttk.Frame):
         # The time remaining
         content.canvasElements['time'] = self.mainCanvas.create_text(self.mainCanvas.coords(clock)[0] + 65,
                                     self.mainCanvas.coords(clock)[1] + 78, text=Game.sec_to_min(content.word['time']),
-                                    fill=style.fadedWhite, font=(style.mainFont[0], 30))
+                                    fill=style.fadedWhite, font=(style.mainFont[0], 23))
 
         # The buttons
         button_images = [Game.register_image(PhotoImage(Image.open(
             os.path.abspath('src/data/images/' + button + '_button.png')))) for button
                          in content.buttonLabels]
-        buttons, bindings, i = [], [self.__skip_word, self.__reveal_letter, self.__settings, self.__exit_game], 0
+        buttons, bindings, i = [], [self.__skip_word, self.__letter_hint, self.__settings, self.__exit_game], 0
         for buttonImg in button_images:
             if i != 0:
                 x = 0
@@ -401,7 +401,8 @@ class Game(ttk.Frame):
                 del content.canvasElements['letters']
 
         letters, i, word_length = [], 0, len(content.word['word'])
-        style.letterWidth = style.letterHeight = (style.mainWindowMinWidth // word_length) - 20
+        style.letterWidth = style.letterHeight = (style.mainWindowMinWidth // word_length) - 20 if \
+            (style.mainWindowMinWidth // word_length) - 20 <= 120 else 120
         while i < word_length:
             style.letterX = (10 * (i + 1)) if i == 0 else (10 * (i + 1)) + style.letterWidth * i
             letters.append(self.mainCanvas.create_rectangle(style.letterX,
@@ -420,7 +421,25 @@ class Game(ttk.Frame):
                 self.mainCanvas.move(letter, (style.mainWindowMinWidth - last_letter_x) / 2 - style.letterX, 0)
             content.canvasElements['letters'] = letters
 
-    def __guess_letter(self, event):
+    def count_letters(self, letters: str) -> int:
+        """Count the hidden/revealed letters
+
+        :param letters: The type of letters to count, either 'hidden' or 'revealed'
+        """
+        hidden, revealed = [], []
+        for letter in content.canvasElements['letters']:
+            fill = self.mainCanvas.itemcget(letter, 'fill')
+            if fill == style.hiddenLetterBG:
+                hidden.append(letter)
+            elif fill == style.guessedLetterBG:
+                revealed.append(letter)
+        else:
+            print(len(hidden), len(revealed))
+            if letters == 'revealed':
+                return len(revealed)
+            return len(hidden)
+
+    def __guess_letter(self, event: tk.Event):
         """Process a typed letter and see if its guessed position matches the real one
 
         :param event: The event as passed by the tkinter binding
@@ -435,21 +454,61 @@ class Game(ttk.Frame):
             if content.word['word'][i] == letter:  # If the letters match...
                 self.reveal_letter(letter__, letter)
                 self.signal_correct_guess()
+                if self.is_word_guessed():  # If all letters are guessed correctly
+                    self.stop_clock()
+                    self.signal_word_guessed()
+                    self.auto_load_word()
             else:
                 self.signal_incorrect_guess()
-            # Decrement the attempts
-            content.word['attempts'] -= 1
-            self.update_attempts(content.word['attempts'])
+                # Decrement the attempts
+                content.word['attempts'] -= 1
+                self.update_attempts(content.word['attempts'])
             if content.word['attempts'] == 0:  # If no more attempts are left...
                 self.stop_clock()
                 self.signal_game_over()
 
+    def auto_load_word(self):
+        """Load a random word"""
+        self.after(1000, self.__skip_word)
+
+    def is_word_guessed(self) -> bool:
+        """Check weather the word is guessed"""
+        word = ''
+        for letter in content.canvasElements['letters']:
+            if self.mainCanvas.itemcget(letter, 'fill') == style.guessedLetterBG:
+                guessed_letter_coordinates = self.mainCanvas.coords(letter)
+                letter_ = self.mainCanvas.find_overlapping(guessed_letter_coordinates[0], guessed_letter_coordinates[1],
+                                                           guessed_letter_coordinates[2],
+                                                           guessed_letter_coordinates[3])[-1]
+                letter__ = self.mainCanvas.itemcget(letter_, 'text')
+                word += letter__
+        else:
+            if word == content.word['word']:
+                return True
+            else:
+                return False
+
+    def signal_word_guessed(self, sound: str = 'src/data/sound/word_correct.wav'):
+        """Signal with sound the correct guess of a word
+
+        :param sound: The path to the sound file. Default is src/data/sound/word_correct.wav
+        """
+        playsound(sound, False)
+
     def signal_correct_guess(self, sound: str = 'src/data/sound/correct.wav'):
-        """Signal with sound the a letter was guessed correctly
+        """Signal with sound that a letter was guessed correctly
 
         :param sound: The path to the sound file. Default is src/data/sound/correct.wav
         """
         playsound(sound, False)
+
+    def signal_hint(self, sound: str = 'src/data/sound/hint.wav'):
+        """Signal with sound a hinted letter
+
+        :param sound: The path to the sound file. Default is src/data/sound/hint.wav
+        """
+        playsound(sound, False)
+
 
     def signal_incorrect_guess(self, sound: str = 'src/data/sound/incorrect.wav'):
         """Signal with sound the a letter was guessed incorrectly
@@ -504,10 +563,11 @@ class Game(ttk.Frame):
         self.mainCanvas.itemconfigure(letter_id, fill=style.guessedLetterBG)
         letter_box = self.mainCanvas.bbox(letter_id)
         letter_box_width = letter_box_height = letter_box[2] - letter_box[0]
-        self.mainCanvas.create_text(letter_box[0] + letter_box_width // 2,
-                                    letter_box[1] + letter_box_height // 2,
-                                    text=word_letter, font=(style.mainFont[0], -round(letter_box_width * 0.75)),
-                                    fill=style.white)
+        content.canvasElements['textLetters'].append(self.mainCanvas.create_text(letter_box[0] + letter_box_width // 2,
+                                                     letter_box[1] + letter_box_height // 2,
+                                                     text=word_letter, font=(style.mainFont[0],
+                                                                             -round(letter_box_width * 0.75)),
+                                                     fill=style.white))
         self.markedLetter = None
         return letter_id, word_letter
 
@@ -579,50 +639,48 @@ class Game(ttk.Frame):
         """
 
         chosen_word, self.wordIsActive = content.wordsDB[choice(list(content.wordsDB.keys()))], False
-        chosen_word['showLetters'] = round(len(chosen_word['word']) * settings.revealLettersRatio[settings.difficulty])
-        chosen_word['attempts'] = (round(len(chosen_word['word']) * settings.revealLettersRatio[settings.difficulty])) \
-            + settings.attempts[settings.difficulty]
+        chosen_word['attempts'] = (round(len(chosen_word['word']) * settings.attemptsRatio[settings.difficulty]))
         chosen_word['time'] = settings.time[settings.difficulty]
         content.word = chosen_word
-        self.update_word_structure()
+        # self.update_word_structure()
         return chosen_word
 
-    def update_word_structure(self, letter: str = None, position: int = None) -> list:
-        """Update the word structure. The word structure is list that keeps track what state a word's letters are in,
-        either 'hidden' or 'revealed'
-
-        :param letter: A letter to put in the word structure
-        :param position: An integer denoting the position in the word structure at which to put the letter
-        :returns: The updated word structure
-        """
-        word_length = len(content.word['word'])
-        # If a word structure initialization attempt is made...
-        # ...(usually at the beginning of the game on an empty 'wordDict')...
-        if letter is None and position is None:
-            self.wordStructure[:], _letter = [], 0
-            # Pick some random positions...
-            positions, random_positions, i = list(range(word_length)), [], 0
-            while i < round(word_length * settings.revealLettersRatio[settings.difficulty]):
-                _position = choice(positions)
-                random_positions.append(_position)
-                positions.remove(_position)
-                i += 1
-            # ...and build the word structure
-            else:
-                while _letter < word_length:
-                    if _letter in random_positions:
-                        self.wordStructure.append(content.word['word'][_letter])
-                    else:
-                        self.wordStructure.append('_')
-                    _letter += 1
-
-        # Else - just update the word structure with a letter
-        elif letter is not None and position is not None:
-            self.wordStructure[position] = letter.upper()
-        else:
-            raise Exception('You have to either specify both \'letter\' and \'position\' '
-                            'arguments or leave them both None')
-        return self.wordStructure
+    # def update_word_structure(self, letter: str = None, position: int = None) -> list:
+    #     """Update the word structure. The word structure is list that keeps track what state a word's letters are in,
+    #     either 'hidden' or 'revealed'
+    #
+    #     :param letter: A letter to put in the word structure
+    #     :param position: An integer denoting the position in the word structure at which to put the letter
+    #     :returns: The updated word structure
+    #     """
+    #     word_length = len(content.word['word'])
+    #     # If a word structure initialization attempt is made...
+    #     # ...(usually at the beginning of the game on an empty 'wordDict')...
+    #     if letter is None and position is None:
+    #         self.wordStructure[:], _letter = [], 0
+    #         # Pick some random positions...
+    #         positions, random_positions, i = list(range(word_length)), [], 0
+    #         while i < round(word_length * settings.revealLettersRatio[settings.difficulty]):
+    #             _position = choice(positions)
+    #             random_positions.append(_position)
+    #             positions.remove(_position)
+    #             i += 1
+    #         # ...and build the word structure
+    #         else:
+    #             while _letter < word_length:
+    #                 if _letter in random_positions:
+    #                     self.wordStructure.append(content.word['word'][_letter])
+    #                 else:
+    #                     self.wordStructure.append('_')
+    #                 _letter += 1
+    #
+    #     # Else - just update the word structure with a letter
+    #     elif letter is not None and position is not None:
+    #         self.wordStructure[position] = letter.upper()
+    #     else:
+    #         raise Exception('You have to either specify both \'letter\' and \'position\' '
+    #                         'arguments or leave them both None')
+    #     return self.wordStructure
 
     @staticmethod
     def sec_to_min(seconds: int) -> str:
@@ -702,7 +760,7 @@ class Game(ttk.Frame):
         """
         return str(type(attribute)).replace('<class ', '').replace('>', '').replace('\'', '')
 
-    def __skip_word(self, event: tk.Event) -> dict:
+    def __skip_word(self, event: tk.Event = None) -> dict:
         """Skip a word (choose a new word and resume the game)
 
         :param event: The event object passed in by the binding
@@ -720,7 +778,8 @@ class Game(ttk.Frame):
 
     def restart_clock(self):
         """Restart the timer"""
-        self.timer.cancel()
+        if self.timer is not None:
+            self.timer.cancel()
         self.reset_clock()
         self.timerActive = True
         self.count_down()
@@ -732,12 +791,27 @@ class Game(ttk.Frame):
         self.timer = None
         self.timerActive = False
 
-    def __reveal_letter(self) -> str:
+    def __letter_hint(self, event: tk.Event) -> str:
         """Reveal an extra letter
 
+        :param event: the tk Event object
         :returns: The revealed letter
         """
-        pass
+        # Only if half or more letters are still hidden
+        if self.count_letters('revealed') < len(content.word['word']) // 3:
+            hidden, i = [], 0
+            for letter in content.canvasElements['letters']:
+                if self.mainCanvas.itemcget(letter, 'fill') == style.hiddenLetterBG or \
+                        self.mainCanvas.itemcget(letter, 'fill') == style.markedLetterBG:
+                    hidden.append((letter, i))
+                i += 1
+            else:
+                random_letter = choice(hidden)
+                self.reveal_letter(random_letter[0], content.word['word'][random_letter[1]])
+                self.signal_hint()
+                content.word['attempts'] -= 1
+                self.update_attempts(content.word['attempts'])
+                return content.word['word'][random_letter[1]]
 
     def __settings(self, event: tk.Event):
         """Go to the settings screen"""
@@ -767,8 +841,10 @@ class Game(ttk.Frame):
         # Update the word definition
         self.mainCanvas.itemconfigure(content.canvasElements['wordDef'], text=content.word['def'])
 
-        # Update the letters
+        # Update the letters/remove the text letters
         self.place_letters()
+        for letter in content.canvasElements['textLetters']:
+            self.mainCanvas.delete(letter)
 
         # Update the attempts
         self.update_attempts(content.word['attempts'])
