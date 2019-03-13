@@ -29,6 +29,7 @@ canvasElements = {
     'synonyms': None,
     'partOfSpeech': None,
     'time': None,
-    'settingsLabels': []
+    'settingsLabels': [],
+    'textLetters': []
 }
 
