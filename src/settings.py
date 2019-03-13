@@ -1,111 +1,55 @@
-"""This class holds the settings of the game. For now they are hard-coded."""
+import os
 
+import sys
 
-class Settings:
+# The path to the active .py file
+rootPath = os.path.split(sys.argv[0])[0]
 
-    programName = 'Casual Word Game'
+# The settings file
+settingsFile = os.path.join(rootPath, 'data', 'settings.json')
 
-    programVersion = '1.2.1'
+# The path to the images directory
+imageDir = os.path.join(rootPath, 'data', 'images')
 
-    # Controls the game's difficulty. Could be either 'easy', 'medium' (the default) or 'hard'
-    difficulty = 'medium'
+# The path to the sound directory
+soundDir = os.path.join(rootPath, 'data', 'sound')
 
-    # Indicates how many letters to reveal from a word (0.5 means half of the letters, 0.3 one third of the letters
-    # etc.). Varies with the 'difficulty'
-    revealLettersRatio = {'easy': 0.5,
-                          'medium': 0.5,
-                          'hard': 0.3}
+# The path to the data directory
+dataDir = os.path.join(rootPath, 'data')
 
-    # Indicates the number of attempts to guess the word. The numbers mean 'add that many to the value of
-    # revealLettersRatio'. Example: On the 'easy' setting if there are 3 letters revealed, one would have 5 (3 + 2)
-    # attempts to guess the word. Varies with the 'difficulty'
-    attempts = {'easy': 2,
-                'medium': 1,
-                'hard': 0}
+# The program's name
+programName = 'Casual Word Game'
 
-    # Game flow character. It tells the program that a word following this character calls for an action other than a
-    # guess e.g: typing <controlCharacter>EXIT is not trying to guess the word 'EXIT' but trying to quit/exit the game
-    controlCharacter = '>'
+# The program's version
+programVersion = '2.0'
 
-    # Keywords. Those follow the 'controlCharacter' to construct a command
-    keywords = {'exit': f"{controlCharacter}exit",
-                'speech': f"{controlCharacter}speech",
-                'def': f"{controlCharacter}def",
-                'syn': f"{controlCharacter}syn",
-                'let': f"{controlCharacter}let",
-                'att': f"{controlCharacter}att",
-                'skip': f"{controlCharacter}skip",
-                'diff': f"{controlCharacter}diff"
-                }
+# Helps to calculate how many incorrect attempts are available to guess the word. The calculation is made by
+# multiplying the length of the word by the attemptsRatio. Varies with the 'difficulty'
+attemptsRatio = {'Easy': 1, 'Medium': 0.5, 'Hard': 0.3}
 
-    @classmethod
-    def initial_prompt(cls, **kwargs) -> None:
-        """This is the long explanatory text, usually shown at the beginning of the game"""
+# Indicates the number of attempts to guess the word. The numbers mean 'add that many to the value of
+# revealLettersRatio'. Example: On the 'Easy' setting if there are 3 letters revealed, one would have 5 (3 + 2)
+# attempts to guess the word. Varies with the 'difficulty'
+attempts = {'Easy': 2, 'Medium': 0, 'Hard': -1}
 
-        print(f"\n{55 * '='}\n\n{cls.programName.upper()}\nv{cls.programVersion}\n\nReady to have "
-              "some fun? Ok, here we go.\nThe rules are very simple."
-              f"\nTry to guess what the word by making a 'position-letter' "
-              "guess that consists of a position"
-              "\n(the row of numbers below the word"
-              " marks the positions) and a letter that you think is at that position."
-              "\n\nFor example: If you think that the letter 'i' is at position '4' in the word "
-              "type '4i' and hit 'ENTER'."
-              "\nOr if you think you know the entire word just type it in and hit 'ENTER'."
-              f"\nRemember that you have a limited number of attempts."
-              "\n\nTo can get a 'part-of-speech' hint type in '>speech' to see it."
-              "\nIf you need a definition hint, type in '>define'."
-              "\nTo show synonyms of the word type in '>syn'."
-              "\nTo let a random letter type in '>let'. Careful, this will also use up an attempt!"
-              "\nTo skip this word and try anther one, type '>skip'."
-              "\nTo change the difficulty of the game, type '>diff easy|medium|hard'"
-              " or just '>diff' without arguments to see the current setting."
-              "\nTo quit the game at any time type '>exit'."
-              f"\nThat's it, have fun!"
-              f"\n\nHere's the word spec:")
-        for kw in kwargs:
-            print(f"{str(kw).upper()}: {str(kwargs[kw])}")
-        print("Can you guess what it is?\n")
+# Controls the game's difficulty. Could be either 'Easy', 'Medium' (the default) or 'Hard'
+difficultyOptions = ['Easy', 'Medium', 'Hard']
+difficulty = difficultyOptions[1]
 
-    @classmethod
-    def short_prompt(cls, **kwargs) -> None:
-        """This is the short text, usually shown when switching words"""
+# The display name of the player
+displayName = 'Player'
 
-        print(f"\n\nHere's the new word:")
-        for kw in kwargs:
-            print(f"{str(kw).upper()}: {str(kwargs[kw])}")
+# The language of the game
+languageOptions = ['En', 'Bg', 'De']
+language = languageOptions[0]
 
-    @classmethod
-    def get_type(cls, attribute: any) -> str:
-        """Return the type of a setting attribute
+# Music on (True) or off (False)
+music = 'On'
+musicOptions = ['On', 'Off']
 
-        :param attribute: The setting attribute to check
-        """
+# SFX on (True) or off (False)
+sfx = 'On'
+sfxOptions = ['On', 'Off']
 
-        return str(type(attribute)).replace('<class ', '').replace('>', '')
-
-    @classmethod
-    def change(cls, setting: str, value: any) -> any:
-        """Change the value of a setting
-
-        :param setting: The name of the setting to change
-        :param value: The value to set
-        """
-
-        # If the 'setting' does nor exist in the settings pool...
-        setting_value: any
-        try:
-            setting_value = getattr(cls, setting)
-        except AttributeError:
-            # ...raise an exception and quit the operation
-            raise
-
-        # ...Else if the value types don't match...
-        if type(setting_value) != type(value):
-            # ...quit the operation
-            raise TypeError(f"The '{setting}' is of type " +
-                            f"{cls.get_type(setting_value)}" +
-                            f" you provided {cls.get_type(value)}.")
-
-        # ...Else if all ok change the value
-        setattr(cls, setting, value)
-        return value
+# Indicates the time available to guess the word. Varies with the 'difficulty'. Expressed in seconds
+time = {'Easy': 181, 'Medium': 121, 'Hard': 61}
