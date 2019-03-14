@@ -3,11 +3,10 @@ import os
 import sys
 import tkinter as tk
 import tkinter.ttk as ttk
-from os import path
 from os.path import join, split
 from random import choice
-from threading import Timer
-from typing import Tuple
+from threading import Timer, Thread
+from typing import Tuple, Any
 
 from playsound import playsound
 
@@ -33,6 +32,7 @@ class Game(ttk.Frame):
         self.wordIsActive = False
         self.timerActive = True
         self.timer = None
+        self.musicLoopTimer = None
         self.markedLetter = None
 
         # Settings related items
@@ -806,6 +806,12 @@ class Game(ttk.Frame):
         self.timer = None
         self.timerActive = False
 
+    def stop_music(self):
+        """Stop a music track that's playing"""
+        if self.musicLoopTimer is not None:
+            self.musicLoopTimer.cancel()
+            self.musicLoopTimer = None
+
     def __letter_hint(self, event: tk.Event) -> str:
         """Reveal an extra letter
 
@@ -846,6 +852,7 @@ class Game(ttk.Frame):
         """
         try:
             self.stop_clock()
+            self.stop_music()
             self.quit()
         except KeyboardInterrupt:
             pass
@@ -875,8 +882,24 @@ class Game(ttk.Frame):
                                           self.mainCanvas.itemcget(content.canvasElements['partOfSpeech'], 'text'))
                                       .split()[:3], '', ' ', 'upper') + ' ' + str(content.word['partOfSpeech']))
 
+    def play_music(self, track: str, interval: float, looping: bool = False):
+        """Play music
+
+        :param track: The track to play
+        :param looping: Should the track loop or not. Default is False
+        :param interval: The interval between the loops
+        """
+        try:
+            playsound(self.get_path('sound', track), False)
+            if looping:
+                self.musicLoopTimer = Timer(interval, self.play_music, [track, interval, True])
+                self.musicLoopTimer.start()
+        except OSError:
+            pass
+
     def start(self):
         """Start the game"""
         self.count_down()
+        self.play_music(track='background.mp3', looping=True, interval=1200.0)
         self.mainloop()
 
