@@ -5,6 +5,7 @@ import threading
 import tkinter as tk
 import tkinter.ttk as ttk
 import wave
+from os import path
 from os.path import join, split
 from random import choice
 from threading import Timer, Thread
@@ -30,6 +31,8 @@ class Game(ttk.Frame):
         """
         super().__init__()
 
+        print(settings.rootPath)
+
         # General items
         self.mainWindow = self.winfo_toplevel()
         self.mainCanvas = self.thinLineImg = None
@@ -51,7 +54,7 @@ class Game(ttk.Frame):
         self.activeOptionsWindow = None
 
         self.init_settings()
-        self.load_words(join(split(sys.argv[0])[0], 'data', 'words.json') if words_file is None
+        self.load_words(path.join(settings.rootPath, 'data', 'words.json') if words_file is None
                         else str(words_file))
         self.build_main_ui()
 
@@ -122,7 +125,7 @@ class Game(ttk.Frame):
             file = open(settings_file, 'r')
         except (FileNotFoundError, OSError):
             sys.exit('Could not read the game\'s settings. Make sure that the settings file is where it\'s '
-                     'supposed to be and is in the correct JSON syntax.')
+                     'supposed to be and is in the correct JSON syntax.' + settings.settingsFile)
         settings_ = json.loads(file.read())
         for key in settings_.keys():
             setattr(settings, key, settings_[key])
