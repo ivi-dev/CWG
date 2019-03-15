@@ -1,4 +1,6 @@
 from game import Game
+from tkinter import Tk
 
-wordGame = Game()
-wordGame.start()
+game = Game()
+game.start()
+

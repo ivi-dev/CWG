@@ -5,6 +5,9 @@
       <option name="ignoredIdentifiers">
         <list>
           <option value="re.*" />
+          <option value="tkinter.Event.x" />
+          <option value="tkinter.Event.y" />
+          <option value="tkinter.Event.char" />
         </list>
       </option>
     </inspection_tool>
