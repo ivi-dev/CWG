@@ -10,6 +10,7 @@ from random import choice
 from threading import Timer, Thread
 from typing import Tuple, Any
 
+import pygame
 from playsound import playsound
 from pydub import AudioSegment
 from pydub.playback import play
@@ -36,9 +37,9 @@ class Game(ttk.Frame):
         self.wordIsActive = False
         self.timerActive = True
         self.timer = None
-        self.musicLoopTimer = None
         self.markedLetter = None
 
+        pygame.mixer.init()
         self.musicPlayer = None
         self.musicPlayerActive = True
 
@@ -382,7 +383,7 @@ class Game(ttk.Frame):
         if music.lower() == 'off':
             self.stop_music()
         else:
-            self.play_music('background.mp3', interval=1200.0, looping=True)
+            self.play_music(track=self.get_path('sound', 'background.mp3'))
 
     def __cancel_settings(self, event: tk.Event):
         """Cancel put of the settings
@@ -672,7 +673,7 @@ class Game(ttk.Frame):
         :returns: A random word from the game's words database
         """
 
-        chosen_word, self.wordIsActive = content.wordsDB[choice(list(content.wordsDB.keys()))], False
+        chosen_word = content.wordsDB[choice(list(content.wordsDB.keys()))]
         chosen_word['attempts'] = (round(len(chosen_word['word']) * settings.attemptsRatio[settings.difficulty]))
         chosen_word['time'] = settings.time[settings.difficulty]
         content.word = chosen_word
@@ -827,9 +828,7 @@ class Game(ttk.Frame):
 
     def stop_music(self):
         """Stop a music track that's playing"""
-        self.musicPlayerActive = False
-        if self.musicLoopTimer is not None:
-            self.musicLoopTimer.cancel()
+        pygame.mixer.music.stop()
 
     def __letter_hint(self, event: tk.Event) -> str:
         """Reveal an extra letter
@@ -901,25 +900,19 @@ class Game(ttk.Frame):
                                           self.mainCanvas.itemcget(content.canvasElements['partOfSpeech'], 'text'))
                                       .split()[:3], '', ' ', 'upper') + ' ' + str(content.word['partOfSpeech']))
 
-    def play_music(self, track: str, interval: float, looping: bool = False):
+    def play_music(self, track: str, loop_count: int = -1):
         """Play music. Creates a new thread for the music player.
 
         :param track: The track to play
-        :param looping: Should the track loop or not. Default is False
-        :param interval: The interval between the loops
+        :param loop_count: How many times to play the track
         """
         if settings.music.lower() == 'on' and self.musicPlayerActive:
-            try:
-                playsound(self.get_path('sound', track), False)
-                if looping:
-                    self.musicLoopTimer = Timer(interval, self.play_music, [track, interval, looping])
-                    self.musicLoopTimer.start()
-            except OSError:
-                raise
+            pygame.mixer.music.load(track)
+            pygame.mixer.music.play(loop_count)
 
     def start(self):
         """Start the game"""
         self.count_down()
-        self.play_music(track='background.mp3', looping=True, interval=1200.0)
+        self.play_music(track=self.get_path('sound', 'background.mp3'))
         self.mainloop()
 
