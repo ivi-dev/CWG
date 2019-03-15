@@ -1,14 +1,18 @@
 import json
 import os
 import sys
+import threading
 import tkinter as tk
 import tkinter.ttk as ttk
+import wave
 from os.path import join, split
 from random import choice
 from threading import Timer, Thread
 from typing import Tuple, Any
 
 from playsound import playsound
+from pydub import AudioSegment
+from pydub.playback import play
 
 import settings
 from PIL import Image
@@ -34,6 +38,9 @@ class Game(ttk.Frame):
         self.timer = None
         self.musicLoopTimer = None
         self.markedLetter = None
+
+        self.musicPlayer = None
+        self.musicPlayerActive = True
 
         # Settings related items
         self.settingsWindow = None
@@ -367,8 +374,15 @@ class Game(ttk.Frame):
 
         :param event: The tk event
         """
-        self.write_settings()
+        new_settings = self.write_settings()
         self.close_window(self.settingsWindow, 'settingsWindow')
+        # Stop any music playing if the setting for it says so
+        # Get the value of the 'music' setting
+        music = new_settings['music']
+        if music.lower() == 'off':
+            self.stop_music()
+        else:
+            self.play_music('background.mp3', interval=1200.0, looping=True)
 
     def __cancel_settings(self, event: tk.Event):
         """Cancel put of the settings
@@ -377,7 +391,7 @@ class Game(ttk.Frame):
         """
         self.close_window(self.settingsWindow, 'settingsWindow')
 
-    def write_settings(self, settings_file: str = settings.settingsFile):
+    def write_settings(self, settings_file: str = settings.settingsFile) -> dict:
         """Write settings to a file"""
         # First collect the current state of the settings
         settings_ = {}
@@ -390,9 +404,10 @@ class Game(ttk.Frame):
             except FileNotFoundError:
                 print('Could not update the settings. Make sure that the settings file is where it\'s '
                       'supposed to be and is in the correct JSON syntax.')
-                return
+                return {}
             file.write(json.dumps(settings_, sort_keys=True, indent=4))
             file.close()
+            return settings_
 
     def close_window(self, window: tk.Toplevel, window_ref: str = ''):
         """Close a gui window
@@ -449,7 +464,6 @@ class Game(ttk.Frame):
             elif fill == style.guessedLetterBG:
                 revealed.append(letter)
         else:
-            print(len(hidden), len(revealed))
             if letters == 'revealed':
                 return len(revealed)
             return len(hidden)
@@ -508,21 +522,24 @@ class Game(ttk.Frame):
 
         :param sound: The path to the sound file. Default is src/data/sound/word_correct.wav
         """
-        playsound(self.get_path('sound', sound), False)
+        if str(settings.sfx).lower() == 'on':
+            playsound(self.get_path('sound', sound), False)
 
     def signal_correct_guess(self, sound: str = 'correct.wav'):
         """Signal with sound that a letter was guessed correctly
 
         :param sound: The path to the sound file. Default is src/data/sound/correct.wav
         """
-        playsound(self.get_path('sound', sound), False)
+        if str(settings.sfx).lower() == 'on':
+            playsound(self.get_path('sound', sound), False)
 
     def signal_hint(self, sound: str = 'hint.wav'):
         """Signal with sound a hinted letter
 
         :param sound: The path to the sound file. Default is src/data/sound/hint.wav
         """
-        playsound(self.get_path('sound', sound), False)
+        if str(settings.sfx).lower() == 'on':
+            playsound(self.get_path('sound', sound), False)
 
 
     def signal_incorrect_guess(self, sound: str = 'incorrect.wav'):
@@ -530,14 +547,16 @@ class Game(ttk.Frame):
 
         :param sound: The path to the sound file. Default is src/data/sound/incorrect.wav
         """
-        playsound(self.get_path('sound', sound), False)
+        if str(settings.sfx).lower() == 'on':
+            playsound(self.get_path('sound', sound), False)
 
     def signal_game_over(self, sound: str = 'game_over.wav'):
         """Signal game over. That happens when the attempts are exhausted or the time ran out
 
         :param sound: The path to the sound file. Default is src/data/sound/game_over.wav
         """
-        playsound(self.get_path('sound', sound), False)
+        if str(settings.sfx).lower() == 'on':
+            playsound(self.get_path('sound', sound), False)
         content.word['attempts'] = 0
         self.update_attempts(0)
         self.markedLetter = None
@@ -808,9 +827,9 @@ class Game(ttk.Frame):
 
     def stop_music(self):
         """Stop a music track that's playing"""
+        self.musicPlayerActive = False
         if self.musicLoopTimer is not None:
             self.musicLoopTimer.cancel()
-            self.musicLoopTimer = None
 
     def __letter_hint(self, event: tk.Event) -> str:
         """Reveal an extra letter
@@ -819,7 +838,7 @@ class Game(ttk.Frame):
         :returns: The revealed letter
         """
         # Only if half or more letters are still hidden
-        if self.count_letters('revealed') < len(content.word['word']) // 3:
+        if self.count_letters('revealed') < len(content.word['word']) // 3 and content.word['attempts'] > 1:
             hidden, i = [], 0
             for letter in content.canvasElements['letters']:
                 if self.mainCanvas.itemcget(letter, 'fill') == style.hiddenLetterBG or \
@@ -883,19 +902,20 @@ class Game(ttk.Frame):
                                       .split()[:3], '', ' ', 'upper') + ' ' + str(content.word['partOfSpeech']))
 
     def play_music(self, track: str, interval: float, looping: bool = False):
-        """Play music
+        """Play music. Creates a new thread for the music player.
 
         :param track: The track to play
         :param looping: Should the track loop or not. Default is False
         :param interval: The interval between the loops
         """
-        try:
-            playsound(self.get_path('sound', track), False)
-            if looping:
-                self.musicLoopTimer = Timer(interval, self.play_music, [track, interval, True])
-                self.musicLoopTimer.start()
-        except OSError:
-            pass
+        if settings.music.lower() == 'on' and self.musicPlayerActive:
+            try:
+                playsound(self.get_path('sound', track), False)
+                if looping:
+                    self.musicLoopTimer = Timer(interval, self.play_music, [track, interval, looping])
+                    self.musicLoopTimer.start()
+            except OSError:
+                raise
 
     def start(self):
         """Start the game"""
