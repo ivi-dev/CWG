@@ -21,7 +21,7 @@ dataDir = os.path.join(rootPath, 'data')
 programName = 'Casual Word Game'
 
 # The program's version
-programVersion = '2.0'
+programVersion = '2.0.1'
 
 # Helps to calculate how many incorrect attempts are available to guess the word. The calculation is made by
 # multiplying the length of the word by the attemptsRatio. Varies with the 'difficulty'
